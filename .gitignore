@@ -1,0 +1,15 @@
+*.dmp
+*.elf
+*.ld.d
+*.lds
+*.map
+*.o
+*.o.cmd
+*.o.d
+*.ta
+
+# host
+*aes_serial
+*hello_world
+*my_test
+*serial_test

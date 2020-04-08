@@ -25,8 +25,6 @@ static TEE_Result cmd_invert(uint32_t param_types, TEE_Param params[4]) {
 	for (uint32_t i = 0; i < size; i++)
 	{
 		((char *)params[1].memref.buffer)[size-i-1] = ((char *)params[0].memref.buffer)[i];
-		//((char *)params[1].memref.buffer)[i] = ((char *)params[0].memref.buffer)[i];
-		//*(((char *)params[1].memref.buffer) + size-i-1) = *(((char *)params[0].memref.buffer) +i);
 	}
 
 	return TEE_SUCCESS;

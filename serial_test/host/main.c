@@ -30,8 +30,6 @@ struct test_ctx {
 	TEEC_Session sess;
 };
 
-int config_serial_port(int * serial_port);
-
 void prepare_tee_context(struct test_ctx *ctx)
 {
 	TEEC_Result res;
@@ -45,14 +43,11 @@ void prepare_tee_context(struct test_ctx *ctx)
 
 
 void prepare_tee_session(struct test_ctx *ctx, TEEC_UUID * uuid)
-//void prepare_tee_session(struct test_ctx *ctx)
 {
-	//TEEC_UUID uuid = TA_SERIAL_TEST_UUID;
 	uint32_t origin;
 	TEEC_Result res;
 
 	/* Open a session with the TA */
-	//res = TEEC_OpenSession(&ctx->ctx, &ctx->sess, &uuid_ta,
 	res = TEEC_OpenSession(&ctx->ctx, &ctx->sess, uuid,
 			       TEEC_LOGIN_PUBLIC, NULL, NULL, &origin);
 	if (res != TEEC_SUCCESS)
@@ -60,13 +55,8 @@ void prepare_tee_session(struct test_ctx *ctx, TEEC_UUID * uuid)
 			res, origin);
 }
 
-void terminate_tee_session(struct test_ctx *ctx)
-{
-	TEEC_CloseSession(&ctx->sess);
-	TEEC_FinalizeContext(&ctx->ctx);
-}
-
-static void get_args(int argc, char *argv[], char **dev, char plaintext[MAX_BUFFER_SIZE], size_t *text_size);
+static void get_args(int argc, char *argv[], char **dev);
+int config_serial_port(int * serial_port);
 
 int main(int argc, char *argv[])
 {
@@ -76,14 +66,14 @@ int main(int argc, char *argv[])
 	TEEC_Operation op;
     TEEC_UUID uuid_ta_aes_serial = TA_AES_SERIAL_UUID;
     TEEC_UUID uuid_ta_serial_test = TA_SERIAL_TEST_UUID;
-	char * dev;
+    char * dev; //ttyUSB0
     char read_buf [MAX_BUFFER_SIZE];
     char invert_buf [MAX_BUFFER_SIZE];
-	size_t text_size;
+    size_t num_bytes;
 
     memset(invert_buf, 0x00, MAX_BUFFER_SIZE);
 
-	get_args(argc, argv, &dev, read_buf, &text_size);
+	get_args(argc, argv, &dev);
 	
     // file descriptor - /dev/ttyUSB0
     int serial_port = open(dev, O_RDWR);
@@ -103,17 +93,30 @@ int main(int argc, char *argv[])
 
     memset(&read_buf, '\0', sizeof(read_buf));
 
-	int num_bytes;
-	 while (1)
-     {
-        num_bytes = read(serial_port, &read_buf, sizeof(read_buf));
+    num_bytes = strlen("aabb");
+    memcpy( read_buf, "aabb", num_bytes);
+    printf("write %s\n", read_buf);
+    num_bytes = write(serial_port, read_buf, num_bytes);
+    printf("writed %d bytes\n", num_bytes);
+    memset(read_buf,0x00, MAX_BUFFER_SIZE);
+
+    prepare_tee_context(&ctx);
+
+	while (1)
+    {
+
+        num_bytes = write(serial_port, read_buf, num_bytes);
+        printf("writed %d bytes\n", num_bytes);
+        memset(read_buf,0x00, MAX_BUFFER_SIZE);
+        memset(invert_buf,0x00, MAX_BUFFER_SIZE);
+        num_bytes = read(serial_port, &read_buf, MAX_BUFFER_SIZE);
         
         if (!num_bytes)
             continue;   
 
         if (num_bytes < 0) {
             printf("Error reading: %s", strerror(errno));
-            break;
+            continue;
         }
         printf("Read %i bytes. Received message: < %s >\n", num_bytes, read_buf);
         fflush(stdout);
@@ -121,7 +124,6 @@ int main(int argc, char *argv[])
 
         printf("prepare tee session ok\n");
         fflush(stdout);
-        prepare_tee_context(&ctx);
         prepare_tee_session(&ctx, &uuid_ta_serial_test);
         //prepare_tee_session(&ctx);
         
@@ -158,9 +160,8 @@ int main(int argc, char *argv[])
         printf("Inverted message (%i): < %s >\n", op.params[1].tmpref.size, op.params[1].tmpref.buffer );
         fflush(stdout);
 
-
 	    TEEC_CloseSession(&ctx.sess);
-	
+	    
         prepare_tee_session(&ctx, &uuid_ta_aes_serial);
         
         printf("prepare tee session - AES_SERIAL - ok\n");
@@ -183,19 +184,6 @@ int main(int argc, char *argv[])
             printf("%02x ", ((uint8_t *)op.params[0].tmpref.buffer)[n]);
         printf("\n");
 
-        res = TEEC_InvokeCommand(&ctx.sess, TA_DECRYPT, &op, &origin);
-        
-        if (res != TEEC_SUCCESS)
-            errx(1, "TEEC_InvokeCommand(CIPHER) failed 0x%x origin 0x%x",
-                res, origin);
-
-        printf("Decrypted buffer: ");
-        for (n = 0; n < op.params[1].tmpref.size; n++)
-            printf("%02x ", ((uint8_t *)op.params[1].tmpref.buffer)[n]);
-        printf("\n");
-
-        printf("DECRYPT message (%i): < %s >\n", op.params[1].tmpref.size, op.params[1].tmpref.buffer );
-
         res = TEEC_InvokeCommand(&ctx.sess, TA_ENCRYPT, &op, &origin);
         
         if (res != TEEC_SUCCESS)
@@ -209,30 +197,28 @@ int main(int argc, char *argv[])
 
         printf("ENCRYPT message (%i): < %s >\n", op.params[1].tmpref.size, op.params[1].tmpref.buffer );
 
+        num_bytes = write(serial_port, invert_buf, num_bytes);
 
         TEEC_CloseSession(&ctx.sess);
-    
-        TEEC_FinalizeContext(&ctx.ctx);
 
         printf("Inverted message (%i): < %s >\n", num_bytes, invert_buf );
-
+        memcpy(read_buf, invert_buf, num_bytes);
 
     };
+
+    TEEC_FinalizeContext(&ctx.ctx);
 
 	return 0;
 }
 
-static void get_args(int argc, char *argv[], char **dev, char plaintext[MAX_BUFFER_SIZE], size_t *text_size)
+static void get_args(int argc, char *argv[], char **dev)
 {
-	if (argc != 3) {
-		warnx("Unexpected number of arguments %d (expected 1)",
-		      argc - 1);
+	if (argc != 2) {
+		warnx("Unexpected number of arguments %d (expected 1) \n %s <device>",
+		      argc - 1, argv[0]);
 		exit(1);
 	}
-	*dev = argv[1];
-    size_t argv2 = strlen(argv[2]);
-    *text_size = ( argv2 < MAX_BUFFER_SIZE) ? argv2:MAX_BUFFER_SIZE;
-	memcpy(plaintext, argv[2], *text_size);
+	*dev = argv[1];    
 }
 
 int config_serial_port(int * serial_port){
@@ -284,7 +270,6 @@ int config_serial_port(int * serial_port){
     /**
      * Baud Rate
      **/
-    // Set in/out baud rate to be 9600
 	cfsetispeed(&tty, B115200);
     cfsetospeed(&tty, B115200);
 
