@@ -18,14 +18,14 @@ TEE_UUID uuid = PTA_SOCKET_UUID;
 
 TEE_Result TA_CreateEntryPoint(void)
 {
-	DMSG("has been called");
+	DMSG(" socket_test");
 
 	return TEE_SUCCESS;
 }
 
 void TA_DestroyEntryPoint(void)
 {
-	DMSG("has been called");
+	DMSG(" socket_test");
 }
 
 TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
@@ -51,7 +51,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 	socket_handle->socket_handle = 0;
 	*sess_ctx = (void *)socket_handle;
 
-	IMSG("socket_test - Open Session Entry Point\n");
+	DMSG(" socket_test");
 	return TEE_SUCCESS;
 }
 
@@ -60,7 +60,7 @@ void TA_CloseSessionEntryPoint(void __maybe_unused *sess_ctx)
 	struct socket_handle_t *socket_handle = (struct socket_handle_t *)sess_ctx;
 	TEE_Free(socket_handle);
 
-	IMSG("socket_test - Close Session Entry Point\n");
+	DMSG(" socket_test");
 }
 
 
@@ -93,11 +93,16 @@ static TEE_Result socket_open(void *sess_ctx, uint32_t param_types,
 						TEE_PARAM_TYPE_VALUE_OUTPUT);
 
 	op[0].value.a = TEE_IP_VERSION_4;
-	op[0].value.b = params[0].value.b;
+	op[0].value.b = params[0].value.a;
 	op[1].memref.buffer = params[1].memref.buffer;
 	op[1].memref.size = params[1].memref.size;
 	op[2].value.a = TEE_ISOCKET_PROTOCOLID_TCP;
 	
+	DMSG("\n  Open connection %s:%d",
+		params[1].memref.buffer,
+		params[0].value.a);
+
+
 	err = TEE_InvokeTACommand(socket_handle->sess, TEE_TIMEOUT_INFINITE,
 		PTA_SOCKET_OPEN,  
 		ptypes,
@@ -106,6 +111,11 @@ static TEE_Result socket_open(void *sess_ctx, uint32_t param_types,
 		return err;
 
 	socket_handle->socket_handle = op[3].value.a;
+
+	DMSG("\n  Success %s:%d, socket_handle: %d\n",
+		params[1].memref.buffer,
+		params[0].value.a,
+		socket_handle->socket_handle);
 
 	return TEE_SUCCESS;
 }
@@ -134,6 +144,8 @@ static TEE_Result socket_close(void *sess_ctx, uint32_t param_types,
 	TEE_Param op[4];
 	op[0].value.a = socket_handle->socket_handle;
 	
+	DMSG("\n  socket_handle: %d", socket_handle->socket_handle);
+
 	err = TEE_InvokeTACommand(socket_handle->sess, TEE_TIMEOUT_INFINITE,
 		PTA_SOCKET_CLOSE,  
 		ptypes,
@@ -177,7 +189,8 @@ static TEE_Result socket_send(void *sess_ctx, uint32_t param_types,
 	op[1].memref.buffer = params[0].memref.buffer;
 	op[1].memref.size = params[0].memref.size;
 
-	
+	DMSG("\n  send(%d bytes): %s", params[0].memref.size, params[0].memref.buffer);
+
 	err = TEE_InvokeTACommand(socket_handle->sess, TEE_TIMEOUT_INFINITE,
 		PTA_SOCKET_SEND,  
 		ptypes,
@@ -222,6 +235,8 @@ static TEE_Result socket_recv(void *sess_ctx, uint32_t param_types,
 		op, &err_origin);
 	if (err != TEE_SUCCESS)
 		return err;
+
+	DMSG("\n  recv(%d bytes): %s", op[1].memref.size, op[1].memref.buffer);
 
 	return TEE_SUCCESS;
 }

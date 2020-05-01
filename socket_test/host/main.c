@@ -46,13 +46,13 @@ int main(void)
 //      Open Connection TCP/IP
 // --------------------------- //
 
-	char server_addr[255] = "192.168.1.106";
+	char server_addr[255] = "10.0.0.18";
 	printf("server address: %s\n", server_addr);
 
 	memset(&op, 0, sizeof(op));
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_TEMP_INPUT,
 					 TEEC_NONE, TEEC_NONE);
-	op.params[0].value.b = 5005;
+	op.params[0].value.a = 5005;
 	op.params[1].tmpref.buffer = server_addr;
 	op.params[1].tmpref.size = sizeof(server_addr);
 

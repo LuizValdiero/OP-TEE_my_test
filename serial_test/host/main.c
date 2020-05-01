@@ -18,8 +18,8 @@
 #include <tee_client_api.h>
 
 /* To the the UUID (found the the TA's h-file(s)) */
-#include <serial_test_ta.h>
 #include <aes_serial_ta.h>
+#include <serial_test_ta.h>
 
 
 #define MAX_BUFFER_SIZE 256
