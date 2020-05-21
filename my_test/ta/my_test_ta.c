@@ -103,7 +103,7 @@ static TEE_Result encrypt128(uint32_t param_types, TEE_Param params[4])
 
 	TEE_UUID uuid = STREAM_CIPHER_UUID;
 	err = TEE_OpenTASession(&uuid, TEE_TIMEOUT_INFINITE, 
-		NULL, NULL, &sess, &err_origin);
+		0, NULL, &sess, &err_origin);
 	
 	if (err != TEE_SUCCESS)
 		return 0x30;

@@ -46,22 +46,22 @@ int main(void)
 //      Open Connection TCP/IP
 // --------------------------- //
 
-	char server_addr[255] = "10.0.0.18";
-	printf("server address: %s\n", server_addr);
-
+	char server_addr[255] = "10.0.0.4";
+	
 	memset(&op, 0, sizeof(op));
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_TEMP_INPUT,
 					 TEEC_NONE, TEEC_NONE);
-	op.params[0].value.a = 5005;
+	op.params[0].value.a = 4433;
 	op.params[1].tmpref.buffer = server_addr;
 	op.params[1].tmpref.size = sizeof(server_addr);
+
+	printf("server %s:%d\n", server_addr, op.params[0].value.a);
 
 	printf("Invoking TA to socket open\n");
 	res = TEEC_InvokeCommand(&ctx.sess, TA_SOCKET_OPEN_CMD, &op, &err_origin);
 	if (res != TEEC_SUCCESS)
 		errx(1, "TEEC_InvokeCommand failed with code 0x%x origin 0x%x",
 			res, err_origin);
-	printf("TA incremented value to %d, sizeof: %d\n", op.params[0].value.a, sizeof(op.params[0].value.a));
 
 
 // --------------------------- //

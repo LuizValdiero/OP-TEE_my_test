@@ -6,7 +6,7 @@
  * This UUID is generated with uuidgen
  * the ITU-T UUID generator at http://www.itu.int/ITU-T/asn1/uuid.html
  */
-#define TA_MY_TEST_UUID \ 
+#define TA_MY_TEST_UUID \
    { 0x22f95932, 0xbc9a, 0x47de, \
        { 0xa8, 0x0a, 0x51, 0xed, 0xe5, 0xc4, 0x0f, 0x2f} }
 	

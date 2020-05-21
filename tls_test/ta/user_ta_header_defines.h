@@ -13,10 +13,11 @@
 #define TA_FLAGS			TA_FLAG_EXEC_DDR
 
 /* Provisioned stack size */
-#define TA_STACK_SIZE			(10 * 1024)
+// https://github.com/OP-TEE/optee_test/pull/279#pullrequestreview-122070464
+#define TA_STACK_SIZE			(64 * 1024)
 
 /* Provisioned heap size for TEE_Malloc() and friends */
-#define TA_DATA_SIZE			(32 * 1024)
+#define TA_DATA_SIZE			(64 * 1024)
 
 /* The gpd.ta.version property */
 #define TA_VERSION	"1.0"

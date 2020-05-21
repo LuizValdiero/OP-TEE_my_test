@@ -98,6 +98,8 @@ int main(void)
 	 * session is closed.
 	 */
 
+	printf("***\n");
+
 	TEEC_CloseSession(&sess);
 
 	TEEC_FinalizeContext(&ctx);

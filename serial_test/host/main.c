@@ -18,9 +18,7 @@
 #include <tee_client_api.h>
 
 /* To the the UUID (found the the TA's h-file(s)) */
-#include <aes_serial_ta.h>
-#include <serial_test_ta.h>
-
+#include "../../aes_serial/ta/include/aes_serial_ta.h"
 
 #define MAX_BUFFER_SIZE 256
 
@@ -65,7 +63,6 @@ int main(int argc, char *argv[])
 	uint32_t origin;
 	TEEC_Operation op;
     TEEC_UUID uuid_ta_aes_serial = TA_AES_SERIAL_UUID;
-    TEEC_UUID uuid_ta_serial_test = TA_SERIAL_TEST_UUID;
     char * dev; //ttyUSB0
     char read_buf [MAX_BUFFER_SIZE];
     char invert_buf [MAX_BUFFER_SIZE];
@@ -124,44 +121,7 @@ int main(int argc, char *argv[])
 
         printf("prepare tee session ok\n");
         fflush(stdout);
-        prepare_tee_session(&ctx, &uuid_ta_serial_test);
-        //prepare_tee_session(&ctx);
-        
-        memset(&op, 0, sizeof(op));
-        op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT,
-                        TEEC_MEMREF_TEMP_OUTPUT,
-                        TEEC_NONE, TEEC_NONE);
-        
-        op.params[0].tmpref.buffer = read_buf;
-        op.params[0].tmpref.size = num_bytes;
-        memset(invert_buf, 0x00, num_bytes);
-        op.params[1].tmpref.buffer = invert_buf;
-        op.params[1].tmpref.size = num_bytes;
 
-        printf("set params ok\n");
-
-        res = TEEC_InvokeCommand(&ctx.sess, TA_INVERT, &op, &origin);
-        
-        if (res != TEEC_SUCCESS)
-            errx(1, "TEEC_InvokeCommand(CIPHER) failed 0x%x origin 0x%x",
-                res, origin);
-
-        printf("buffer: ");
-        uint32_t n = 0;
-        for (n = 0; n < op.params[0].tmpref.size; n++)
-            printf("%02x ", ((uint8_t *)op.params[0].tmpref.buffer)[n]);
-        printf("\n");
-
-        printf("Encrypted buffer: ");
-        for (n = 0; n < op.params[1].tmpref.size; n++)
-            printf("%02x ", ((uint8_t *)op.params[1].tmpref.buffer)[n]);
-        printf("\n");
-
-        printf("Inverted message (%i): < %s >\n", op.params[1].tmpref.size, op.params[1].tmpref.buffer );
-        fflush(stdout);
-
-	    TEEC_CloseSession(&ctx.sess);
-	    
         prepare_tee_session(&ctx, &uuid_ta_aes_serial);
         
         printf("prepare tee session - AES_SERIAL - ok\n");
@@ -180,7 +140,9 @@ int main(int argc, char *argv[])
 
 
         printf("buffer: ");
-        for (n = 0; n < op.params[0].tmpref.size; n++)
+
+        //uint32_t n = 0;
+        for (uint32_t n = 0; n < op.params[0].tmpref.size; n++)
             printf("%02x ", ((uint8_t *)op.params[0].tmpref.buffer)[n]);
         printf("\n");
 
@@ -191,11 +153,11 @@ int main(int argc, char *argv[])
                 res, origin);
 
         printf("Encrypted buffer: ");
-        for (n = 0; n < op.params[1].tmpref.size; n++)
+        for (uint32_t n = 0; n < op.params[1].tmpref.size; n++)
             printf("%02x ", ((uint8_t *)op.params[1].tmpref.buffer)[n]);
         printf("\n");
 
-        printf("ENCRYPT message (%i): < %s >\n", op.params[1].tmpref.size, op.params[1].tmpref.buffer );
+        printf("ENCRYPT message (%i): < %s >\n", op.params[1].tmpref.size, (char *) op.params[1].tmpref.buffer );
 
         num_bytes = write(serial_port, invert_buf, num_bytes);
 

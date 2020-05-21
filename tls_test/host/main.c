@@ -46,7 +46,7 @@ int main(void)
 //      Connect to server with SSL/TLS
 // --------------------------- //
 
-	char server_addr[255] = "10.0.0.18";
+	char server_addr[255] = "10.0.0.2";
 	printf("server address: %s\n", server_addr);
 
 	memset(&op, 0, sizeof(op));
@@ -56,14 +56,12 @@ int main(void)
 	op.params[1].tmpref.buffer = server_addr;
 	op.params[1].tmpref.size = sizeof(server_addr);
 
-	printf("Invoking TA to socket open\n");
+	printf("Invoking TA to tls open\n");
 	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_OPEN_CMD, &op, &err_origin);
 	if (res != TEEC_SUCCESS)
 		errx(1, "TEEC_InvokeCommand TA_TLS_OPEN_CMD failed with code 0x%x origin 0x%x",
 			res, err_origin);
-	printf("TA incremented value to %d, sizeof: %d\n", op.params[0].value.a, sizeof(op.params[0].value.a));
-
-
+	
 // --------------------------- //
 //      Send Message "Hello World"
 // --------------------------- //
@@ -77,7 +75,7 @@ int main(void)
 	op.params[0].tmpref.buffer = msg;
 	op.params[0].tmpref.size = strlen(msg);
 
-	printf("Invoking TA to socket send\n");
+	printf("Invoking TA to tls send\n");
 	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_SEND_CMD, &op, &err_origin);
 	if (res != TEEC_SUCCESS)
 		errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
@@ -98,7 +96,7 @@ int main(void)
 	op.params[0].tmpref.buffer = msg_received;
 	op.params[0].tmpref.size = sizeof(msg_received);
 
-	printf("Invoking TA to socket recv\n");
+	printf("Invoking TA to tls recv\n");
 	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_RECV_CMD, &op, &err_origin);
 	if (res != TEEC_SUCCESS)
 		errx(1, "TEEC_InvokeCommand TA_TLS_RECV_CMD failed with code 0x%x origin 0x%x",
@@ -113,7 +111,7 @@ int main(void)
 
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE, TEEC_NONE, TEEC_NONE);
 
-	printf("Invoking TA to socket close\n");
+	printf("Invoking TA to tls close\n");
 	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_CLOSE_CMD, &op, &err_origin);
 	if (res != TEEC_SUCCESS)
 		errx(1, "TEEC_InvokeCommand TA_TLS_CLOSE_CMD failed with code 0x%x origin 0x%x",
