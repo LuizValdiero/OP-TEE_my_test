@@ -174,12 +174,10 @@ static TEE_Result socket_send(void *sess_ctx, uint32_t param_types,
 						   TEE_PARAM_TYPE_NONE,
 						   TEE_PARAM_TYPE_NONE);
 
-	DMSG("has been called");
-
+	
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
-	//return 0x1111; //test
-
+	
 	TEE_Param op[4];
 
 	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
@@ -192,14 +190,17 @@ static TEE_Result socket_send(void *sess_ctx, uint32_t param_types,
 	op[1].memref.buffer = params[0].memref.buffer;
 	op[1].memref.size = params[0].memref.size;
 
-	DMSG("\n  send(%d bytes): %s", params[0].memref.size, (char *) params[0].memref.buffer);
+	//DMSG("\n  send(%d bytes): %s", params[0].memref.size, (char *) params[0].memref.buffer);
 
 	err = TEE_InvokeTACommand(socket_handle->sess, TEE_TIMEOUT_INFINITE,
 		PTA_SOCKET_SEND,  
 		ptypes,
 		op, &err_origin);
 	if (err != TEE_SUCCESS)
+	{
+		EMSG("\n  .Error: Socket send 0x%x", err);
 		return err;
+	}
 
 	params[1].value.a = op[2].value.a;
 
@@ -238,8 +239,12 @@ static TEE_Result socket_recv(void *sess_ctx, uint32_t param_types,
 		PTA_SOCKET_RECV,  
 		ptypes,
 		op, &err_origin);
+
 	if (err != TEE_SUCCESS)
+	{
+		EMSG("\n  .Error: Socket recv 0x%x", err);
 		return err;
+	}
 
 	DMSG("\n  recv(%d bytes): %s", op[1].memref.size, (char *) op[1].memref.buffer);
 

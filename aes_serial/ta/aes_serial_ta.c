@@ -20,8 +20,12 @@ static aes_ctr_key_t const aes_ctr_key {
 };
 */
 
+TEE_Result prepare_cipher(uint32_t mode_code, struct cipher_handle_t * handle);
+TEE_Result cmd_encrypt(void *session, uint32_t mode_code,
+				uint32_t param_types, TEE_Param params[4]);
 
-TEE_Result prepare_cipher(uint32_t mode_code, struct cipher_handle_t * handle) {
+TEE_Result prepare_cipher(uint32_t mode_code, struct cipher_handle_t * handle)
+{
 	uint32_t algo = TEE_ALG_AES_CTR;
 	// mode
 	//TEE_MODE_ENCRYPT
@@ -96,7 +100,9 @@ TEE_Result prepare_cipher(uint32_t mode_code, struct cipher_handle_t * handle) {
 }
 
 
-TEE_Result cmd_encrypt(void *session, uint32_t mode_code, uint32_t param_types, TEE_Param params[4]) {
+TEE_Result cmd_encrypt(void *session, uint32_t mode_code,
+				uint32_t param_types, TEE_Param params[4])
+{
 	
 	struct cipher_handle_t *cipher_handle = (struct cipher_handle_t *)session;
 	TEE_Result res;

@@ -4,23 +4,21 @@
 
 #include <x509_test_ta.h>
 
-#include <mbedtls/error.h>
+//#include <mbedtls/error.h>
 
 #include <mbedtls/ssl.h>
 #include <mbedtls/x509.h>
 #include <mbedtls/debug.h>
 #include <mbedtls/certs.h>
-#if !defined(MBEDTLS_CONFIG_FILE)
-#include <mbedtls/config.h>
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+struct cacert_test_handle_t {
+	mbedtls_x509_crt * cacert;
+};
 
 TEE_Result TA_CreateEntryPoint(void)
 {
@@ -47,7 +45,17 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 
 	/* Unused parameters */
 	(void)&params;
-	(void)&sess_ctx;
+
+	struct cacert_test_handle_t *cacert_test_handle;
+	
+	cacert_test_handle = TEE_Malloc(sizeof(struct cacert_test_handle_t), 0);
+	if (!cacert_test_handle)
+		return TEE_ERROR_OUT_OF_MEMORY;
+
+	cacert_test_handle->cacert = TEE_Malloc( sizeof(mbedtls_x509_crt), TEE_MALLOC_FILL_ZERO);
+
+	*sess_ctx = (void *)cacert_test_handle;
+
 
 	DMSG(" x509_test");
 	return TEE_SUCCESS;
@@ -56,6 +64,11 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 void TA_CloseSessionEntryPoint(void *sess_ctx)
 {
 	(void)&sess_ctx;
+
+	struct cacert_test_handle_t *cacert_test_handle = (struct cacert_test_handle_t *)sess_ctx;
+	TEE_Free(cacert_test_handle->cacert);
+	TEE_Free(cacert_test_handle);
+
 	DMSG(" x509_test");
 }
 
@@ -72,25 +85,32 @@ static TEE_Result x509_crt(void *sess_ctx, uint32_t param_types,
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-    mbedtls_x509_crt cacert = {};
+    //mbedtls_x509_crt cacert = {};
+	struct cacert_test_handle_t *cacert_test_handle = (struct cacert_test_handle_t *)sess_ctx;
+	
 
     int ret;
 
-    mbedtls_x509_crt_init( &cacert );
+    mbedtls_x509_crt_init( cacert_test_handle->cacert );
 
-    ret = mbedtls_x509_crt_parse( &cacert, (const unsigned char *) mbedtls_test_cas_pem, \
+
+	DMSG(" len certificate %d", cacert_test_handle->cacert->raw.len);
+
+    ret = mbedtls_x509_crt_parse( cacert_test_handle->cacert, (const unsigned char *) mbedtls_test_cas_pem, \
                           mbedtls_test_cas_pem_len );
     if( ret < 0 )
     {
         DMSG( " failed\n  !  mbedtls_x509_crt_parse returned -0x%x\n\n", -ret );
-		char error_buf[100];
-		mbedtls_strerror( ret, error_buf, 100 );
-		DMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
+		//char error_buf[100];
+		//mbedtls_strerror( ret, error_buf, 100 );
+		//DMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
     } else {
         DMSG( " \n  .  mbedtls_x509_crt_parse returned 0x%x\n\n", ret );
 	}
 
-	mbedtls_x509_crt_free(&cacert);
+	DMSG(" len certificate %d", cacert_test_handle->cacert->raw.len);
+
+	mbedtls_x509_crt_free(cacert_test_handle->cacert);
 
 	return TEE_SUCCESS;
 }
@@ -120,9 +140,9 @@ static TEE_Result x509_crt2(void *sess_ctx, uint32_t param_types,
     if( ret < 0 )
     {
         DMSG( " failed\n  !  mbedtls_x509_crt_parse returned -0x%x\n\n", -ret );
-		char error_buf[100];
-		mbedtls_strerror( ret, error_buf, 100 );
-		DMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
+		//char error_buf[100];
+		//mbedtls_strerror( ret, error_buf, 100 );
+		//DMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
     } else {
         DMSG( " \n  .  mbedtls_x509_crt_parse returned 0x%x\n\n", ret );
 	}

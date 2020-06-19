@@ -21,5 +21,4 @@ MY_PACKAGE_CLEAN_COMMON_FLAGS ?= TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR)
 
 .PHONY: my-package-clean-common
 my-package-clean-common:
-	$(MAKE) -C $(MY_PACKAGE_PATH) \
-			$(MY_PACKAGE_CLEAN_COMMON_FLAGS) clean
+	#$(MAKE) -C $(MY_PACKAGE_PATH) $(MY_PACKAGE_CLEAN_COMMON_FLAGS) clean
