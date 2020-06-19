@@ -1,5 +1,7 @@
 global-incdirs-y += include
-srcs-y += tls_test_ta.c
+srcs-y += src/tls_test_ta.c
+srcs-y += src/tls_handler.c
+srcs-y += src/socket_handler.c
 
 libnames += mbedtls
 libdirs += lib/libmbedtls

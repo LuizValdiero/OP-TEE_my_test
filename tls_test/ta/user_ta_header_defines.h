@@ -13,7 +13,6 @@
 #define TA_FLAGS			TA_FLAG_EXEC_DDR
 
 /* Provisioned stack size */
-// https://github.com/OP-TEE/optee_test/pull/279#pullrequestreview-122070464
 #define TA_STACK_SIZE			(64 * 1024)
 
 /* Provisioned heap size for TEE_Malloc() and friends */
