@@ -34,9 +34,8 @@ void finish_tls_structures(mbedtls_ssl_context* ssl, \
     mbedtls_entropy_free( entropy );
 }
 
-int initialize_ctr_drbg(mbedtls_entropy_context * entropy,
-	mbedtls_ctr_drbg_context * ctr_drbg,
-	const char * pers)
+int initialize_ctr_drbg(mbedtls_entropy_context * entropy, \
+	mbedtls_ctr_drbg_context * ctr_drbg, const char * pers)
 {
 	int ret;
 	DMSG( "\n  . Seeding the random number generator..." );
@@ -46,30 +45,26 @@ int initialize_ctr_drbg(mbedtls_entropy_context * entropy,
                                strlen(pers) ) ) != 0 )
     {
 	    EMSG(" failed\n  ! mbedtls_ctr_drbg_seed returned %x\n", ret );
-		//char error_buf[100];
-		//mbedtls_strerror( ret, error_buf, 100 );
-		//DMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
+		tls_print_error_code(ret);
     }
 
-DMSG( "\n  . inialized" );
+    DMSG( "\n  . inialized" );
 
 	return ret;
 }
 
 int set_ca_root_certificate(mbedtls_x509_crt * cacert, \
-                const unsigned char * api_ca_crt, \
-                size_t api_ca_crt_len)
+                const unsigned char * ca_crt, \
+                size_t ca_crt_len)
 {
 	DMSG( "  . Loading the CA root certificate ..." );    
 	int ret;
 
-    ret = mbedtls_x509_crt_parse( cacert, api_ca_crt, api_ca_crt_len);
+    ret = mbedtls_x509_crt_parse( cacert, ca_crt, ca_crt_len);
     if( ret < 0 )
     {
         EMSG( " failed\n  !  mbedtls_x509_crt_parse returned -0x%x\n\n", -ret );
-		//char error_buf[100];
-		//mbedtls_strerror( ret, error_buf, 100 );
-		//DMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
+		tls_print_error_code(ret);
     } else {
         DMSG( " \n  .  mbedtls_x509_crt_parse returned 0x%x\n\n", ret );
 	}
@@ -92,9 +87,7 @@ int setting_up_tls(mbedtls_ssl_config* conf, \
                     MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
     {
         EMSG( " failed\n  ! mbedtls_ssl_config_defaults returned %d\n\n", ret );
-		//char error_buf[100];
-		//mbedtls_strerror( ret, error_buf, 100 );
-		//EMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
+		tls_print_error_code(ret);
     }
 
 /* OPTIONAL is not optimal for security,
@@ -115,9 +108,7 @@ int assign_configuration(mbedtls_ssl_context * ssl, mbedtls_ssl_config * conf)
     if( ( ret = mbedtls_ssl_setup( ssl, conf ) ) != 0 )
     {
         EMSG( " failed\n  ! mbedtls_ssl_setup returned %d  -0x%x\n\n", ret, -ret );
-		//char error_buf[100];
-		//mbedtls_strerror( ret, error_buf, 100 );
-		//EMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
+		tls_print_error_code(ret);
     }
     return ret;
 }
@@ -129,10 +120,9 @@ int set_hostname(mbedtls_ssl_context * ssl ,const char * hostname)
     if( ( ret = mbedtls_ssl_set_hostname( ssl, hostname ) ) != 0 )
     {
         EMSG( " failed\n  ! mbedtls_ssl_set_hostname returned %d\n\n", ret );
-		//char error_buf[100];
-		//mbedtls_strerror( ret, error_buf, 100 );
-		//EMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
+		tls_print_error_code(ret);
     }
+    DMSG("Hostname: %s", ssl->hostname);
     return ret;
 }
 
@@ -156,12 +146,10 @@ int handshake(mbedtls_ssl_context * ssl)
         if( ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE )
         {
             EMSG( " failed\n  ! mbedtls_ssl_handshake returned -0x%x\n\n", -ret );
-			//char error_buf[100];
-        	//mbedtls_strerror( ret, error_buf, 100 );
-			//EMSG("\n  ! Last error was:-0x%x - %s\n\n", -ret, error_buf );
-            return ret;
+			tls_print_error_code(ret);
+			return ret;
         } else {
-			DMSG( " .");
+			IMSG( " .");
 		}
     }
 
@@ -176,10 +164,61 @@ int verify_server_certificate(mbedtls_ssl_context * ssl)
     if( ( flags = mbedtls_ssl_get_verify_result( ssl ) ) != 0 )
     {
         EMSG( " failed\n" );
-        //char vrfy_buf[512];
-        //mbedtls_x509_crt_verify_info( vrfy_buf, sizeof( vrfy_buf ), "  ! ", flags );
-        //DMSG( "%s\n", vrfy_buf );
+        tls_print_x509_crt_verify_info(flags);
+    } else {
+        IMSG( "  ok." );
     }
 
 	return TEE_SUCCESS;
+}
+
+int tls_handler_write(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t size) {
+    int ret;
+    while( ( ret = mbedtls_ssl_write( ssl, buffer, size ) ) <= 0 )
+    {
+        if( ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE )
+        {
+            EMSG( " failed\n  ! mbedtls_ssl_write returned -0x%x\n\n", -ret );
+			tls_print_error_code(ret);
+			return ret;
+        }
+    }
+    return ret;
+}
+
+int tls_handler_read(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t size_buffer) {
+    int ret;
+    memset( buffer, 0, size_buffer);    
+    while (1)
+    {
+        ret = mbedtls_ssl_read( ssl, buffer, size_buffer-1 );
+
+        if( ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE )
+            continue;
+
+        if( ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY ) {
+			EMSG("Error ssl read: %d\n ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY", ret);
+			break;
+		}
+		if( ret < 0) {
+			EMSG( " failed\n  ! mbedtls_ssl_read returned -0x%x\n\n", -ret );
+            tls_print_error_code(ret);
+			break;
+		}
+        break;
+    }
+    return ret;
+}
+
+
+void tls_print_error_code( int error_code) {
+    char error_buf[100];
+    mbedtls_strerror( error_code, error_buf, 100 );
+	EMSG("\n  ! Last error was:-0x%x - %s\n\n", -error_code, error_buf );        
+}
+
+void tls_print_x509_crt_verify_info (int flags) {
+    char vrfy_buf[512];
+    mbedtls_x509_crt_verify_info( vrfy_buf, sizeof( vrfy_buf ), "  ! ", flags );
+    EMSG( "%s\n", vrfy_buf );
 }

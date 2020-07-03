@@ -7,6 +7,7 @@ BINARY=e7d490f5-0b64-4474-8b3b-c0ed7f3719d3
 
 -include $(TA_DEV_KIT_DIR)/mk/ta_dev_kit.mk
 
+LDFLAGS+= CFG_TA_MBEDTLS
 
 ifeq ($(wildcard $(TA_DEV_KIT_DIR)/mk/ta_dev_kit.mk), )
 clean:

@@ -1,20 +1,19 @@
-
 #include "socket_handler.h"
-#include "../../socket_test/ta/include/socket_test_ta.h"
 
 #include <string.h>
 
-TEE_UUID uuid_socket = TA_SOCKET_TEST_UUID;
+TEE_UUID uuid_pta_socket = PTA_SOCKET_UUID;
 
-
-TEE_Result socket_handler_open(TEE_TASessionHandle *sess, uint32_t param_types,
-	TEE_Param params[4])
+TEE_Result socket_handler_open(void *sess_ctx, \
+				unsigned char * server, size_t server_len, uint32_t port)
 {
-    TEE_Result res;
+    struct socket_handle_t *socket_handle = (struct socket_handle_t *)sess_ctx;
+	socket_handle->socket_handle = 0;
+	TEE_Result res;
 	uint32_t err_origin;
 
-    res = TEE_OpenTASession(&uuid_socket, TEE_TIMEOUT_INFINITE, 
-		0, NULL, sess, &err_origin);
+    res = TEE_OpenTASession(&uuid_pta_socket, TEE_TIMEOUT_INFINITE, 
+		0, NULL, &socket_handle->sess, &err_origin);
 	
 	if (res != TEE_SUCCESS)
 	{
@@ -22,91 +21,143 @@ TEE_Result socket_handler_open(TEE_TASessionHandle *sess, uint32_t param_types,
 		return res;
 	}
 
-	res = TEE_InvokeTACommand(*sess, TEE_TIMEOUT_INFINITE,
-		TA_SOCKET_OPEN_CMD,  
-		param_types,
-		params, &err_origin);
+	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
+						TEE_PARAM_TYPE_MEMREF_INPUT,
+						TEE_PARAM_TYPE_VALUE_INPUT,
+						TEE_PARAM_TYPE_VALUE_OUTPUT);
+
+	TEE_Param op[4];
+	op[0].value.a = TEE_IP_VERSION_4;
+	op[0].value.b = port;
+	op[1].memref.buffer = server;
+	op[1].memref.size = server_len;
+	op[2].value.a = TEE_ISOCKET_PROTOCOLID_TCP;
+
+
+	DMSG("\n  Open connection %s:%d",
+		(char *) op[1].memref.buffer,
+		op[0].value.b);
+
+	res = TEE_InvokeTACommand(socket_handle->sess, TEE_TIMEOUT_INFINITE,
+		PTA_SOCKET_OPEN,  
+		ptypes,
+		op, &err_origin);
 	
+	socket_handle->socket_handle = op[3].value.a;
+
     return res;
 }
 
-TEE_Result socket_handler_close(TEE_TASessionHandle *sess, uint32_t param_types,
-	TEE_Param params[4])
+TEE_Result socket_handler_close(void *sess_ctx)
 {
-    TEE_Result res;
+    struct socket_handle_t *socket_handle = (struct socket_handle_t *)sess_ctx;
+	TEE_Result res;
 	uint32_t err_origin;
 
-	res = TEE_InvokeTACommand(*sess, TEE_TIMEOUT_INFINITE, \
-                TA_SOCKET_CLOSE_CMD, \
-                param_types, \
-                params, &err_origin);
+
+	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
+
+	TEE_Param op[4];
+	memset(&op, 0, sizeof(op));
+	op[0].value.a = socket_handle->socket_handle;
+	
+	res = TEE_InvokeTACommand(socket_handle->sess, TEE_TIMEOUT_INFINITE, \
+                PTA_SOCKET_CLOSE, \
+                ptypes, \
+                op, &err_origin);
 
     if(res != TEE_SUCCESS)
         return res;
 	
-    TEE_CloseTASession(*sess);
+    TEE_CloseTASession(socket_handle->sess);
     return res;
 }
 
 
 int f_send(void * sess_ctx, const unsigned char * buf, unsigned int len)
 {
-	DMSG("has been called\n");
-	TEE_TASessionHandle * sess = (TEE_TASessionHandle *)sess_ctx;
+    struct socket_handle_t *socket_handle = (struct socket_handle_t *)sess_ctx;
+	
 	TEE_Result err;
 	uint32_t err_origin;
 
 	TEE_Param op[4];
 	memset(&op, 0, sizeof(op));
-	op[0].memref.buffer = (unsigned char *) buf;
-	op[0].memref.size = len;
-
-	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT,
-						   TEE_PARAM_TYPE_VALUE_OUTPUT,
-						   TEE_PARAM_TYPE_NONE,
-						   TEE_PARAM_TYPE_NONE);
+	op[0].value.a = socket_handle->socket_handle;
+	op[0].value.b = TEE_TIMEOUT_INFINITE;
+	op[1].memref.buffer = (unsigned char *) buf;
+//	op[1].memref.buffer = buf;
+	op[1].memref.size = len;
 	
-	err = TEE_InvokeTACommand( *sess, TEE_TIMEOUT_INFINITE,
-		TA_SOCKET_SEND_CMD,  
+	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
+						TEE_PARAM_TYPE_MEMREF_INPUT,
+						TEE_PARAM_TYPE_VALUE_OUTPUT,
+						TEE_PARAM_TYPE_NONE);
+
+	err = TEE_InvokeTACommand( socket_handle->sess, TEE_TIMEOUT_INFINITE,
+		PTA_SOCKET_SEND,  
 		ptypes,
 		op, &err_origin);
 	
-	DMSG("\n  . f_send sent %d bytes, res: %x\n", op[1].value.a, err);
+	DMSG("\n  . f_send sent %d bytes, res: %x\n", op[2].value.a, err);
 		
 	if (err != TEE_SUCCESS)
 	{
 		EMSG("\n  . Error 0x%x", err);
 		return err;
 	}
-	return op[1].value.a;
+	return op[2].value.a;
 }
 
-int f_recv(void * sess_ctx, unsigned char * buf, unsigned int len)
+int f_recv_timeout(void * sess_ctx, unsigned char * buf, unsigned int len,  uint32_t timeout)
 {
-	DMSG("has been called");
-	TEE_TASessionHandle * sess = (TEE_TASessionHandle *)sess_ctx;
+    struct socket_handle_t *socket_handle = (struct socket_handle_t *)sess_ctx;
+
 	TEE_Result err;
 	uint32_t err_origin;
 
+	DMSG("\n	timeout: %d ", timeout);
+	if(!timeout)
+		timeout = TEE_TIMEOUT_INFINITE;
+
 	TEE_Param op[4];
 	memset(&op, 0, sizeof(op));
-	op[0].memref.buffer = buf;
-	op[0].memref.size = len;
-
-	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_OUTPUT,
-						   TEE_PARAM_TYPE_NONE,
-						   TEE_PARAM_TYPE_NONE,
-						   TEE_PARAM_TYPE_NONE);
 	
-	err = TEE_InvokeTACommand( *sess, TEE_TIMEOUT_INFINITE,
-		TA_SOCKET_RECV_CMD,  
+	op[0].value.a = socket_handle->socket_handle;
+	op[0].value.b = timeout;
+	op[1].memref.buffer = buf;
+	op[1].memref.size = len;
+	
+
+
+	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
+						TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						TEE_PARAM_TYPE_NONE,
+						TEE_PARAM_TYPE_NONE);
+	
+	err = TEE_InvokeTACommand( socket_handle->sess, TEE_TIMEOUT_INFINITE,
+		PTA_SOCKET_RECV,  
 		ptypes,
 		op, &err_origin);
+
+
+	IMSG("		%d bytes recved.", op[1].memref.size);
+
 	if (err != TEE_SUCCESS)
 	{
 		EMSG("\n  . Error 0x%x", err);
 		return err;
 	}
 
-	return op[0].memref.size;
+	return op[1].memref.size;
+}
+
+
+int f_recv(void * sess_ctx, unsigned char * buf, unsigned int len)
+{
+	return f_recv_timeout( sess_ctx, buf, len, TEE_TIMEOUT_INFINITE);
+
 }

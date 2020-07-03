@@ -1,7 +1,6 @@
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
 
-//#include <tee_ipsocket.h>
 #include <pta_socket.h>
 
 #include <tee_isocket.h>
@@ -62,7 +61,6 @@ void TA_CloseSessionEntryPoint(void __maybe_unused *sess_ctx)
 
 	DMSG(" socket_test");
 }
-
 
 static TEE_Result socket_open(void *sess_ctx, uint32_t param_types,
 	TEE_Param params[4])
@@ -154,8 +152,7 @@ static TEE_Result socket_close(void *sess_ctx, uint32_t param_types,
 		return err;
 
 	TEE_CloseTASession(socket_handle->sess);
-	// ??? sera q eu zero ou mantenho
-	//socket_handle->socket_handle = 0;
+	socket_handle->socket_handle = 0;
 
 	return TEE_SUCCESS;
 }
@@ -189,8 +186,6 @@ static TEE_Result socket_send(void *sess_ctx, uint32_t param_types,
 	op[0].value.b = TEE_TIMEOUT_INFINITE;
 	op[1].memref.buffer = params[0].memref.buffer;
 	op[1].memref.size = params[0].memref.size;
-
-	//DMSG("\n  send(%d bytes): %s", params[0].memref.size, (char *) params[0].memref.buffer);
 
 	err = TEE_InvokeTACommand(socket_handle->sess, TEE_TIMEOUT_INFINITE,
 		PTA_SOCKET_SEND,  

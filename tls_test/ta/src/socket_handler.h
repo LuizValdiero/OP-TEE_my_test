@@ -4,14 +4,22 @@
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
 
+#include <pta_socket.h>
+#include <tee_isocket.h>
+#include <tee_tcpsocket.h>
 
-TEE_Result socket_handler_open(TEE_TASessionHandle *sess, uint32_t param_types,
-	TEE_Param params[4]);
+struct socket_handle_t {
+	int socket_handle;
+	TEE_TASessionHandle sess;
+};
 
-TEE_Result socket_handler_close(TEE_TASessionHandle *sess, uint32_t param_types,
-	TEE_Param params[4]);
+TEE_Result socket_handler_open(void *sess_ctx, \
+				unsigned char * server, size_t server_len, uint32_t port);
 
-int f_send(void * sess_ctx, const unsigned char * buf, unsigned int len);
-int f_recv(void * sess_ctx, unsigned char * buf, unsigned int len);
+TEE_Result socket_handler_close(void *sess_ctx);
 
-#endif
+int f_send(void * sess_ctx, const unsigned char * buf, size_t len);
+int f_recv(void * sess_ctx, unsigned char * buf, size_t len);
+int f_recv_timeout(void * sess_ctx, unsigned char * buf, size_t len,  uint32_t timeout);
+
+#endif // _SOCKET_HANDLER_H

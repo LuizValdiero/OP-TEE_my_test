@@ -48,4 +48,13 @@
  */
 #define TA_TLS_RECV_CMD 3
 
+/*
+ * TEST_ENCRYPT_DATA
+ * [OUTPUT] param[0] (memref) - message
+ * 			param[1] unused
+ * 			param[2] unused
+ * 			param[3] unused
+ */
+#define TEST_ENCRYPT_DATA 4
+
 #endif /*TA_TLS_TEST_H*/

@@ -7,7 +7,7 @@
 *.o.cmd
 *.o.d
 *.ta
-
+.*
 # host
 *aes_serial
 *hello_world
