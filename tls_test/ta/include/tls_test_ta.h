@@ -33,7 +33,7 @@
 /*
  * TA_TLS_SEND_CMD
  * [INPUT] 	param[0] (memref) - message
- * [OUTPUT] param[1].value.a - bytes sent
+ * [OUTPUT] param[1].value.a - response - status code
  * 			param[2] unused
  * 			param[3] unused
  */

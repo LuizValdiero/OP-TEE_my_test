@@ -258,16 +258,33 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 	mount_request( &request, tls_handle->httpHeader, data_package_to_json, &plain_data, tls_handle->credentials);
 	TEE_Free(plain_data.buffer);
     
-	DMSG("\n mount_request:\n%s\n", request.buffer);
-
 	ret = tls_handler_write(&tls_handle->ssl, request.buffer, request.buffer_size);
 	TEE_Free(request.buffer);
 
 	if(ret <  0)
 		return TEE_ERROR_COMMUNICATION;
-	
-	
-	params[1].value.a = ret;
+
+	#define RESPONSE_SIZE 1024
+	buffer_t response = {.buffer = TEE_Malloc(RESPONSE_SIZE, 0), .buffer_size = RESPONSE_SIZE};
+
+	int response_size = tls_handler_read(&tls_handle->ssl, \
+											response.buffer, response.buffer_size);
+	if (response_size >= 0) {
+		// get http_header
+		char * ptr_response = strstr((const char*) response.buffer, "HTTP/");
+		if (ptr_response) {
+			ptr_response = strchr(ptr_response, ' ') + 1;
+			if (!strncmp( ptr_response, "200", strlen(" 200")))
+				DMSG("response code: 200\n");
+			char * end_ptr;
+			params[1].value.a = strtoul((const char *) ptr_response, &end_ptr,0);
+		}
+		while (response_size > 0)
+		{
+			response_size = tls_handler_read(&tls_handle->ssl, \
+											response.buffer, response.buffer_size);
+		}
+	}
 
 	return TEE_SUCCESS;
 }

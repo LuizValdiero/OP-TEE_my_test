@@ -104,8 +104,8 @@ int main(void)
 		errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
 			res, err_origin);
 
-	printf("\n\n%d Bytes sent\n\n", op.params[1].value.a);
-
+	printf("\n\n response code: %d\n\n", op.params[1].value.a);
+/*
 // --------------------------- //
 //      Recv Message
 // --------------------------- //
@@ -128,7 +128,6 @@ int main(void)
 	printf("message received (%d bytes): %s\n\n", op.params[0].tmpref.size, msg_received);
 	} while (op.params[0].tmpref.size > 0);
 
-/*
 	memset(msg_received, 0x0, sizeof(msg_received));
 
 	memset(&op, 0, sizeof(op));
