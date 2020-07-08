@@ -10,6 +10,7 @@
 #include "tls_handler.h"
 #include "my_post.h"
 #include "crypto.h"
+#include "serial_package.h"
 
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
@@ -28,7 +29,7 @@ struct tls_handle_t {
 	struct socket_handle_t socket_sess;
 
 	struct HttpHeader_t * httpHeader;
-	struct Credentials * credentials;
+	struct credentials_t * credentials;
 
 	struct cipher_handle_t cipher;	
 
@@ -85,7 +86,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 
 	memcpy(tls_handle->httpHeader, &httpHeader, size);
 	
-	struct Credentials credentials = { \
+	struct credentials_t credentials = { \
 		.domain = "smartlisha", \
 		.username = "", \
 		.password = ""};
@@ -237,24 +238,12 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	struct buffer_t encrypted_data;
-	struct buffer_t plain_data;
-	struct crypto_header_t header;
-	struct buffer_t iv;
-	unsigned char type_data;
+	buffer_t encrypted_data;
+	buffer_t plain_data;
+	serial_header_t header;
+	buffer_t iv;
 	
-	uint32_t header_size = sizeof(header);
-	
-	unsigned char * pointer = (unsigned char*) params[0].memref.buffer;
-	
-	memcpy(&header, pointer, header_size);
-	pointer += header_size -1;
-	
-	memcpy(&type_data, pointer, 1);
-	pointer += 1;
-	
-	encrypted_data.buffer = pointer;
-	encrypted_data.buffer_size = header.encrypted_size;
+	dismount_serial_package(&params[0], &header, &encrypted_data);
 	
 	iv.buffer = header.iv;
 	iv.buffer_size = sizeof(header.iv);
@@ -262,31 +251,21 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 	decrypt_data(&tls_handle->cipher, &iv, \
                 &encrypted_data, &plain_data);
 
-	type_data = plain_data.buffer[0];
-	if(type_data == ((unsigned char) 'S')) {
-		type_data = SERIE;
-	} else {
-		if (type_data == ((unsigned char) 'R')) {
-			type_data = RECORD;
-		} else {
-			free(plain_data.buffer);
-			return TEE_ERROR_CANCEL;
-		}
-	}
 
-	char buffer_out[512];
-    memset(buffer_out, 0, 512);
-	int size = mount_request( buffer_out, 512, tls_handle->httpHeader, type_data, (plain_data.buffer+1), tls_handle->credentials);
+	int request_size = 512;
+	buffer_t request = { .buffer = TEE_Malloc(request_size, 0), .buffer_size = request_size};
+	
+	mount_request( &request, tls_handle->httpHeader, data_package_to_json, &plain_data, tls_handle->credentials);
+	TEE_Free(plain_data.buffer);
     
-	DMSG("\n mount_request:\n%s\n", buffer_out);
+	DMSG("\n mount_request:\n%s\n", request.buffer);
 
-	params[1].value.a = 0;
-	ret = tls_handler_write(&tls_handle->ssl, (unsigned char *) buffer_out, size);
-
-	free(plain_data.buffer);
+	ret = tls_handler_write(&tls_handle->ssl, request.buffer, request.buffer_size);
+	TEE_Free(request.buffer);
 
 	if(ret <  0)
 		return TEE_ERROR_COMMUNICATION;
+	
 	
 	params[1].value.a = ret;
 
@@ -327,12 +306,7 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	unsigned char iv_char[16];
-	struct buffer_t iv = { .buffer_size = 16, .buffer = iv_char};
-	gerate_iv(&iv);
-
-	unsigned char type_data = ((unsigned char) 'S');
-	struct Serie serie = { \
+	serie_t serie = { \
 				.version = 17, \
 				.unit = 2224179556, \
 				.x = 741868840, \
@@ -343,37 +317,35 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 				.t0 = 1567021716000000, \
 				.t1 = 1567028916000000 };
 
-	struct crypto_header_t header;
-	struct buffer_t data;
-	struct buffer_t plain_buffer;
-	uint32_t header_size = sizeof(header);
-	uint32_t total_size = header_size;
+	serial_header_t header;
+	buffer_t encrypted_data;
+	buffer_t plain_buffer;
 
-	plain_buffer.buffer_size = sizeof(serie) + 1;
-	unsigned char ddata[plain_buffer.buffer_size];
-	
-	memcpy(ddata, &type_data, 1);
-	memcpy(ddata + 1, &serie, sizeof(serie));
-	plain_buffer.buffer = ddata;
+	uint32_t total_size = 0;
 
+	unsigned char iv_char[16];
+	buffer_t iv = { .buffer_size = 16, .buffer = iv_char};
+	gerate_iv(&iv);
+
+	create_data_package(SERIE, &plain_buffer, (void *) &serie);
 	create_encrypted_data(&tls_handle->cipher, &iv, \
-                &plain_buffer, &data);
+                &plain_buffer, &encrypted_data);
+	TEE_Free(plain_buffer.buffer);
 
-	total_size += data.buffer_size;
+	total_size = sizeof(header) + encrypted_data.buffer_size;
 	if (params[0].memref.size < total_size) {
-		free(data.buffer);
+		TEE_Free(encrypted_data.buffer);
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	header.encrypted_size = data.buffer_size;
+	header.encrypted_size = encrypted_data.buffer_size;
 	memcpy(header.iv, iv.buffer, iv.buffer_size);
 
-	memcpy(params[0].memref.buffer, &header, header_size);
-	memcpy(((unsigned char *) params[0].memref.buffer) + header_size, data.buffer, data.buffer_size);
-
+	mount_serial_package(&params[0], &header, &encrypted_data);
 	params[0].memref.size = total_size;
-	free(data.buffer);
 
+	TEE_Free(encrypted_data.buffer);
+	
 	return TEE_SUCCESS;
 }
 

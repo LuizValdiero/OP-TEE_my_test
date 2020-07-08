@@ -1,8 +1,11 @@
 #include "my_post.h"
 
-int mount_body(char * buffer, int size, int (*print)(char *, int, void*), void * data, struct Credentials * credential) {
-    int size_data = snprintf(buffer, size, "{");
-    size_data += print(buffer + size_data, size-size_data, data);
+int mount_body(buffer_t * out, \
+                int (*data_to_json)(buffer_t * out, int *displacement, buffer_t * data), \
+                buffer_t * data, struct credentials_t * credential)
+{
+    int displacement = snprintf((char *)  out->buffer, out->buffer_size, "{");
+    data_to_json(out, &displacement, data);
     /*
     if(workflow) {
         printf(" \n size_data: %d", size_data);
@@ -10,31 +13,35 @@ int mount_body(char * buffer, int size, int (*print)(char *, int, void*), void *
         size_data += sprintf(buffer+size_data, ", \"workflow\":%s}", workflow);
     }
     */
-    if(credential) {
-        size_data += credentials_print_json(buffer + size_data, size-size_data, credential);
+    if (credential) {
+        credentials_print_json(out, &displacement, credential);
     }
-    size_data += snprintf(buffer + size_data,size-size_data, "}");
-    return size_data;
+    displacement += snprintf((char *)  out->buffer + displacement ,out->buffer_size - displacement, "}");
+    out->buffer_size = displacement;
+    DMSG("\n\n%s\n", out->buffer);
+    return TEE_SUCCESS;
 }
 
-int mount_request(char * buff, int size, struct HttpHeader_t * httpHeader, data_type_t data_type, void * data, struct Credentials * credentials) {
-    char buffer_data[512];
-    
-    int size_data = 0;
-    if(data_type == SERIE)
-        size_data = mount_body(buffer_data, size, series_print_json, data, credentials);
+int mount_request(buffer_t * out, struct HttpHeader_t * httpHeader, \
+                    int (*data_to_json)(buffer_t * out, int *displacement, buffer_t * data), \
+                    buffer_t * data, struct credentials_t * credentials)
+{
+    buffer_t body = { .buffer = TEE_Malloc(out->buffer_size, 0), \
+                        .buffer_size = out->buffer_size};
+    if (!body.buffer)
+        return TEE_ERROR_OUT_OF_MEMORY;
 
-    if(data_type == RECORD)
-        size_data = mount_body(buffer_data, size, record_print_json, data, credentials);
+    mount_body(&body, data_to_json, data, credentials);
+    httpHeader->content_length = body.buffer_size;
+    int displacement = 0;
+    mount_http_header(out, &displacement, httpHeader);
+    if (out->buffer_size < displacement + body.buffer_size) {    
+        TEE_Free(body.buffer);
+        return TEE_ERROR_SHORT_BUFFER;
+    }
+    memcpy(out->buffer + displacement, body.buffer, body.buffer_size);
+    out->buffer_size = displacement + body.buffer_size;
 
-    if (!size_data)
-        return 0;
-
-    printf("size_data: %d\n", size_data);
-
-    httpHeader->content_length = size_data;
-    int displacement = mount_http_header(buff, size, httpHeader);
-
-    memcpy(buff+displacement, buffer_data, size_data);
-    return displacement + size_data;
+    TEE_Free(body.buffer);
+    return TEE_SUCCESS;
 }

@@ -4,9 +4,11 @@
 #include <stdio.h>
 #include <string.h>
 
-enum method_t { GET,POST, PUT};
-enum path_t { API_GET, API_POST, API_ATTACH};
-enum content_type_t { JSON, OCTET_STREAM};
+#include "defines.h"
+
+typedef enum method_t { GET,POST, PUT} method_t;
+typedef enum path_t { API_GET, API_POST, API_ATTACH} path_t;
+typedef enum content_type_t { JSON, OCTET_STREAM} content_type_t;
 
 extern const char * method_list[];
 extern const char * path_list[];
@@ -14,14 +16,14 @@ extern const char * content_type_list[];
 
 
 struct HttpHeader_t {
-    enum method_t method;
-    enum path_t path;
-    enum content_type_t content_type;
+    method_t method;
+    path_t path;
+    content_type_t content_type;
     const char * hostname;
     int content_length;
 };
 
-int mount_http_header(char * buff, int size, struct HttpHeader_t * httpHeader);
+int mount_http_header(buffer_t * out, int *displacement, struct HttpHeader_t * httpHeader);
 
 #endif // HTTP_HANDLER_H
 

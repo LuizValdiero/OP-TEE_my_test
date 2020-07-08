@@ -1,10 +1,11 @@
 #include "crypto.h"
 
 
-TEE_Result gerate_iv(struct buffer_t * iv) {
+TEE_Result gerate_iv(buffer_t * iv) {
 	TEE_GenerateRandom(iv->buffer, iv->buffer_size);
 	return TEE_SUCCESS;
 }
+
 
 TEE_Result initialize_crypto(struct cipher_handle_t * cipher, uint32_t algorithm, \
         uint32_t mode, char  * key, uint32_t key_size) {
@@ -66,9 +67,9 @@ TEE_Result initialize_cipher(struct cipher_handle_t * cipher, uint32_t algorithm
 
 
 TEE_Result decrypt_data(struct cipher_handle_t * cipher, \
-                struct buffer_t * iv, \
-                struct buffer_t * cipher_buffer, \
-                struct buffer_t * plain_buffer)
+                buffer_t * iv, \
+                buffer_t * cipher_buffer, \
+                buffer_t * plain_buffer)
 {
     plain_buffer->buffer = TEE_Malloc(cipher_buffer->buffer_size, 0);
     plain_buffer->buffer_size = cipher_buffer->buffer_size;
@@ -87,9 +88,9 @@ TEE_Result decrypt_data(struct cipher_handle_t * cipher, \
 
 
 TEE_Result create_encrypted_data(struct cipher_handle_t * cipher, \
-                struct buffer_t * iv, \
-                struct buffer_t * plain_buffer, \
-                struct buffer_t * cipher_buffer)
+                buffer_t * iv, \
+                buffer_t * plain_buffer, \
+                buffer_t * cipher_buffer)
 {
     size_t encrypted_size = plain_buffer->buffer_size *2;
     unsigned char encrypted_data[encrypted_size];
