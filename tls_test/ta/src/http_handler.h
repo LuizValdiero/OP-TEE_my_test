@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "defines.h"
 
@@ -24,6 +25,10 @@ struct HttpHeader_t {
 };
 
 int mount_http_header(buffer_t * out, int *displacement, struct HttpHeader_t * httpHeader);
+unsigned long get_response_code(buffer_t * response);
+
+
+
 
 #endif // HTTP_HANDLER_H
 

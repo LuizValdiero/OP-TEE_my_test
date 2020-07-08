@@ -37,3 +37,14 @@ int mount_http_header(buffer_t * out, int *displacement, struct HttpHeader_t * h
 
     return TEE_SUCCESS;
 }
+
+unsigned long get_response_code(buffer_t * response) {
+    DMSG(" .");
+    char * ptr_response = strstr((const char*) response->buffer, "HTTP/");
+    if (ptr_response) {
+        ptr_response = strchr(ptr_response, ' ');
+        char * end_ptr;
+        return strtoul((const char *) ptr_response, &end_ptr,0);
+    }
+    return 0;
+}

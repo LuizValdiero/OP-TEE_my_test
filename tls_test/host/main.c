@@ -104,7 +104,7 @@ int main(void)
 		errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
 			res, err_origin);
 
-	printf("\n\n response code: %d\n\n", op.params[1].value.a);
+	printf("	. response code: %d\n", op.params[1].value.a);
 /*
 // --------------------------- //
 //      Recv Message

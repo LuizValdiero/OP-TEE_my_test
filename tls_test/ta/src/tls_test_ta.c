@@ -261,6 +261,8 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 	ret = tls_handler_write(&tls_handle->ssl, request.buffer, request.buffer_size);
 	TEE_Free(request.buffer);
 
+	params[1].value.a = 0;
+
 	if(ret <  0)
 		return TEE_ERROR_COMMUNICATION;
 
@@ -271,21 +273,16 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 											response.buffer, response.buffer_size);
 	if (response_size >= 0) {
 		// get http_header
-		char * ptr_response = strstr((const char*) response.buffer, "HTTP/");
-		if (ptr_response) {
-			ptr_response = strchr(ptr_response, ' ') + 1;
-			if (!strncmp( ptr_response, "200", strlen(" 200")))
-				DMSG("response code: 200\n");
-			char * end_ptr;
-			params[1].value.a = strtoul((const char *) ptr_response, &end_ptr,0);
-		}
+		params[1].value.a = get_response_code(&response);
 		while (response_size > 0)
 		{
 			response_size = tls_handler_read(&tls_handle->ssl, \
 											response.buffer, response.buffer_size);
 		}
 	}
-
+	
+	if (!params[1].value.a)
+		return TEE_ERROR_CANCEL;
 	return TEE_SUCCESS;
 }
 

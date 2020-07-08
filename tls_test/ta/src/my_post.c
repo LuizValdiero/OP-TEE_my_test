@@ -18,7 +18,6 @@ int mount_body(buffer_t * out, \
     }
     displacement += snprintf((char *)  out->buffer + displacement ,out->buffer_size - displacement, "}");
     out->buffer_size = displacement;
-    DMSG("\n\n%s\n", out->buffer);
     return TEE_SUCCESS;
 }
 
