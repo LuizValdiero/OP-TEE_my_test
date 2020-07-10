@@ -8,7 +8,7 @@
 #include "defines.h"
 
 typedef enum method_t { GET,POST, PUT} method_t;
-typedef enum path_t { API_GET, API_POST, API_ATTACH} path_t;
+typedef enum path_t { API_GET, API_PUT, API_CREATE} path_t;
 typedef enum content_type_t { JSON, OCTET_STREAM} content_type_t;
 
 extern const char * method_list[];
@@ -26,7 +26,7 @@ struct HttpHeader_t {
 
 int mount_http_header(buffer_t * out, int *displacement, struct HttpHeader_t * httpHeader);
 unsigned long get_response_code(buffer_t * response);
-
+void set_request_path(struct HttpHeader_t * httpHeader, path_t path);
 
 
 

@@ -5,12 +5,13 @@
 #include <tls_test_ta.h>
 
 #include "certs/_.lisha.ufsc.br.pem.h"
+#include "credentials/secret_credentials.h"
 
-#include "socket_handler.h"
-#include "tls_handler.h"
-#include "my_post.h"
-#include "crypto.h"
-#include "serial_package.h"
+#include <socket_handler.h>
+#include <tls_handler.h>
+#include <my_post.h>
+#include <crypto.h>
+#include <serial_package.h>
 
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
@@ -87,9 +88,9 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 	memcpy(tls_handle->httpHeader, &httpHeader, size);
 	
 	struct credentials_t credentials = { \
-		.domain = "smartlisha", \
-		.username = "", \
-		.password = ""};
+		.domain = SECRET_DOMAIN, \
+		.username = SECRET_USERNAME, \
+		.password = SECRET_PASSWORD};
 
 	size = sizeof(credentials);
 	tls_handle->credentials = TEE_Malloc( size, 0);
@@ -142,8 +143,6 @@ static TEE_Result ta_tls_close(void *sess_ctx, uint32_t param_types,
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
 	
-	DMSG("TA_TLS_CLOSE");
-
     mbedtls_ssl_close_notify( &tls_handle->ssl );
 
 	err = socket_handler_close(&tls_handle->socket_sess);
@@ -254,7 +253,10 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 
 	int request_size = 512;
 	buffer_t request = { .buffer = TEE_Malloc(request_size, 0), .buffer_size = request_size};
-	
+
+	path_t path = request_path_of_data_package(&plain_data);
+	set_request_path(tls_handle->httpHeader, path);
+
 	mount_request( &request, tls_handle->httpHeader, data_package_to_json, &plain_data, tls_handle->credentials);
 	TEE_Free(plain_data.buffer);
     
@@ -313,23 +315,12 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 	struct tls_handle_t *tls_handle = (struct tls_handle_t *)sess_ctx;
 	
 	uint32_t exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_OUTPUT,
-						   TEE_PARAM_TYPE_NONE,
+						   TEE_PARAM_TYPE_VALUE_INPUT,
 						   TEE_PARAM_TYPE_NONE,
 						   TEE_PARAM_TYPE_NONE);
 
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
-
-	serie_t serie = { \
-				.version = 17, \
-				.unit = 2224179556, \
-				.x = 741868840, \
-				.y = 679816441, \
-                .z = 25300, \
-				.dev = 0, \
-				.r = 0, \
-				.t0 = 1567021716000000, \
-				.t1 = 1567028916000000 };
 
 	serial_header_t header;
 	buffer_t encrypted_data;
@@ -341,7 +332,40 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 	buffer_t iv = { .buffer_size = 16, .buffer = iv_char};
 	gerate_iv(&iv);
 
-	create_data_package(SERIE, &plain_buffer, (void *) &serie);
+	if (params[1].value.a == 0) {
+		serie_t serie = { \
+					.version = 17, \
+					.unit = 2224179556, \
+					.x = 0, \
+					.y = 1, \
+					.z = 2, \
+					.dev = 0, \
+					.r = 0, \
+					.t0 = 1594080000000000, \
+					.t1 = 1594291176706000 };
+		create_data_package(SERIE, &plain_buffer, (void *) &serie);
+	} else {
+		record_t record = { \
+					.version = 17, \
+					.unit = 2224179556, \
+					.value = (double) 15, \
+					.uncertainty = 0, \
+					.x = 0, \
+					.y = 1, \
+					.z = 2, \
+					.t = 1594256176706000, \
+					.dev = 0};
+		
+		unsigned char test_value_array[10];
+		memset(test_value_array, 0, 10);
+		buffer_t test_value = {.buffer = test_value_array, .buffer_size = 10};
+
+		snprintf((char  *)test_value.buffer, test_value.buffer_size, "%f", 20.0);
+		DMSG("test snprintf: %s", test_value.buffer);
+
+		create_data_package(RECORD, &plain_buffer, (void *) &record);	
+	}
+
 	create_encrypted_data(&tls_handle->cipher, &iv, \
                 &plain_buffer, &encrypted_data);
 	TEE_Free(plain_buffer.buffer);

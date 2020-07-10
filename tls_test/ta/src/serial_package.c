@@ -1,4 +1,4 @@
-#include "serial_package.h"
+#include <serial_package.h>
 
 int mount_serial_package(TEE_Param * out, serial_header_t * header, buffer_t * data) {
     uint32_t header_size = sizeof(serial_header_t);

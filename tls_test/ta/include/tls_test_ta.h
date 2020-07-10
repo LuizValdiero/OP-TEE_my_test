@@ -51,7 +51,7 @@
 /*
  * TEST_ENCRYPT_DATA
  * [OUTPUT] param[0] (memref) - message
- * 			param[1] unused
+ * [INPUT]  param[1].value.a - type of data
  * 			param[2] unused
  * 			param[3] unused
  */

@@ -75,10 +75,10 @@ int main(void)
 	memset(encrypted_data, 0x0, sizeof(encrypted_data));
 	memset(&op, 0, sizeof(op));
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_OUTPUT,
-					  TEEC_NONE, TEEC_NONE, TEEC_NONE);
+					  TEEC_VALUE_INPUT, TEEC_NONE, TEEC_NONE);
 	op.params[0].tmpref.buffer = encrypted_data;
 	op.params[0].tmpref.size = sizeof(encrypted_data);
-
+	op.params[1].value.a = 0;
 	printf("Invoking TA to encrypt data\n");
 	res = TEEC_InvokeCommand(&ctx.sess, TEST_ENCRYPT_DATA, &op, &err_origin);
 	if (res != TEEC_SUCCESS)

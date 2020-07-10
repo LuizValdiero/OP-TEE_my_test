@@ -1,11 +1,11 @@
-#include "http_handler.h"
+#include <http_handler.h>
 
 
 const char * method_list[] = { "GET", "POST", "PUT", NULL };
 const char * path_list[] = { \
     "/api/get.php", \
     "/api/put.php", \
-    "/api/attach.php", \
+    "/api/create.php", \
     NULL \
 };
 const char * content_type_list[] = { \
@@ -29,7 +29,6 @@ int mount_http_header(buffer_t * out, int *displacement, struct HttpHeader_t * h
                 httpHeader->hostname, \
                 httpHeader->content_length, \
                 content_type_list[httpHeader->content_type]);
-
     if(avaliable_size < size_print)
         return TEE_ERROR_SHORT_BUFFER;
 
@@ -39,7 +38,6 @@ int mount_http_header(buffer_t * out, int *displacement, struct HttpHeader_t * h
 }
 
 unsigned long get_response_code(buffer_t * response) {
-    DMSG(" .");
     char * ptr_response = strstr((const char*) response->buffer, "HTTP/");
     if (ptr_response) {
         ptr_response = strchr(ptr_response, ' ');
@@ -47,4 +45,8 @@ unsigned long get_response_code(buffer_t * response) {
         return strtoul((const char *) ptr_response, &end_ptr,0);
     }
     return 0;
+}
+
+void set_request_path(struct HttpHeader_t * httpHeader, path_t path) {
+    httpHeader->path = path;
 }

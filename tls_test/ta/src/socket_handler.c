@@ -1,4 +1,4 @@
-#include "socket_handler.h"
+#include <socket_handler.h>
 
 #include <string.h>
 
@@ -102,7 +102,7 @@ int f_send(void * sess_ctx, const unsigned char * buf, unsigned int len)
 		ptypes,
 		op, &err_origin);
 	
-	DMSG("\n  . f_send sent %d bytes, res: %x\n", op[2].value.a, err);
+	//DMSG("\n  . f_send sent %d bytes, res: %x\n", op[2].value.a, err);
 		
 	if (err != TEE_SUCCESS)
 	{
@@ -119,7 +119,6 @@ int f_recv_timeout(void * sess_ctx, unsigned char * buf, unsigned int len,  uint
 	TEE_Result err;
 	uint32_t err_origin;
 
-	DMSG("\n	timeout: %d ", timeout);
 	if(!timeout)
 		timeout = TEE_TIMEOUT_INFINITE;
 
