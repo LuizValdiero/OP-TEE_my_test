@@ -26,7 +26,7 @@ struct HttpHeader_t {
 
 int mount_http_header(buffer_t * out, int *displacement, struct HttpHeader_t * httpHeader);
 unsigned long get_response_code(buffer_t * response);
-void set_request_path(struct HttpHeader_t * httpHeader, path_t path);
+void set_request_path_in_header(struct HttpHeader_t * httpHeader, path_t path);
 
 
 

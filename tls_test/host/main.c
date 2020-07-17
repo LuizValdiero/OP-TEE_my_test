@@ -69,7 +69,6 @@ int main(void)
 // --------------------------- //
 //      Create Data
 // --------------------------- //
-
 	char encrypted_data[BUFFER_LENGTH];
 	
 	memset(encrypted_data, 0x0, sizeof(encrypted_data));
@@ -89,7 +88,6 @@ int main(void)
 // --------------------------- //
 //      Send Data
 // --------------------------- //
-
 	int encrypted_data_size = op.params[0].tmpref.size;
 	
 	memset(&op, 0, sizeof(op));
@@ -105,45 +103,6 @@ int main(void)
 			res, err_origin);
 
 	printf("	. response code: %d\n", op.params[1].value.a);
-/*
-// --------------------------- //
-//      Recv Message
-// --------------------------- //
-
-	char msg_received[BUFFER_LENGTH];
-	do {
-	memset(msg_received, 0x0, sizeof(msg_received));
-
-	memset(&op, 0, sizeof(op));
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_OUTPUT,
-					  TEEC_NONE, TEEC_NONE, TEEC_NONE);
-	op.params[0].tmpref.buffer = msg_received;
-	op.params[0].tmpref.size = sizeof(msg_received);
-
-	printf("Invoking TA to tls recv\n");
-	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_RECV_CMD, &op, &err_origin);
-	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_InvokeCommand TA_TLS_RECV_CMD failed with code 0x%x origin 0x%x",
-			res, err_origin);
-	printf("message received (%d bytes): %s\n\n", op.params[0].tmpref.size, msg_received);
-	} while (op.params[0].tmpref.size > 0);
-
-	memset(msg_received, 0x0, sizeof(msg_received));
-
-	memset(&op, 0, sizeof(op));
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_OUTPUT,
-					  TEEC_NONE, TEEC_NONE, TEEC_NONE);
-	op.params[0].tmpref.buffer = msg_received;
-	op.params[0].tmpref.size = sizeof(msg_received);
-
-	printf("Invoking TA to tls recv\n");
-	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_RECV_CMD, &op, &err_origin);
-	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_InvokeCommand TA_TLS_RECV_CMD failed with code 0x%x origin 0x%x",
-			res, err_origin);
-	printf("message received (%d bytes): %s\n\n", op.params[0].tmpref.size, msg_received);
-
-// */
 
 // --------------------------- //
 //      Close connection

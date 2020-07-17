@@ -5,6 +5,7 @@
 
 #include <defines.h>
 #include <utils/data_version_handler.h>
+#include <utils/double_format_handler.h>
 
 typedef struct __attribute__((__packed__)) {
     uint8_t version;

@@ -254,12 +254,12 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 	int request_size = 512;
 	buffer_t request = { .buffer = TEE_Malloc(request_size, 0), .buffer_size = request_size};
 
-	path_t path = request_path_of_data_package(&plain_data);
-	set_request_path(tls_handle->httpHeader, path);
+	path_t path = get_request_path_of_data_package(&plain_data);
+	set_request_path_in_header(tls_handle->httpHeader, path);
 
 	mount_request( &request, tls_handle->httpHeader, data_package_to_json, &plain_data, tls_handle->credentials);
 	TEE_Free(plain_data.buffer);
-    
+
 	ret = tls_handler_write(&tls_handle->ssl, request.buffer, request.buffer_size);
 	TEE_Free(request.buffer);
 
@@ -268,13 +268,12 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 	if(ret <  0)
 		return TEE_ERROR_COMMUNICATION;
 
-	#define RESPONSE_SIZE 1024
-	buffer_t response = {.buffer = TEE_Malloc(RESPONSE_SIZE, 0), .buffer_size = RESPONSE_SIZE};
+	#define HTTPS_RESPONSE_BUFFER_SIZE 1024
+	buffer_t response = {.buffer = TEE_Malloc(HTTPS_RESPONSE_BUFFER_SIZE, 0), .buffer_size = HTTPS_RESPONSE_BUFFER_SIZE};
 
 	int response_size = tls_handler_read(&tls_handle->ssl, \
 											response.buffer, response.buffer_size);
 	if (response_size >= 0) {
-		// get http_header
 		params[1].value.a = get_response_code(&response);
 		while (response_size > 0)
 		{
@@ -282,7 +281,7 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 											response.buffer, response.buffer_size);
 		}
 	}
-	
+
 	if (!params[1].value.a)
 		return TEE_ERROR_CANCEL;
 	return TEE_SUCCESS;
@@ -348,21 +347,13 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 		record_t record = { \
 					.version = 17, \
 					.unit = 2224179556, \
-					.value = (double) 15, \
+					.value = 15.03, \
 					.uncertainty = 0, \
 					.x = 0, \
 					.y = 1, \
 					.z = 2, \
 					.t = 1594256176706000, \
 					.dev = 0};
-		
-		unsigned char test_value_array[10];
-		memset(test_value_array, 0, 10);
-		buffer_t test_value = {.buffer = test_value_array, .buffer_size = 10};
-
-		snprintf((char  *)test_value.buffer, test_value.buffer_size, "%f", 20.0);
-		DMSG("test snprintf: %s", test_value.buffer);
-
 		create_data_package(RECORD, &plain_buffer, (void *) &record);	
 	}
 

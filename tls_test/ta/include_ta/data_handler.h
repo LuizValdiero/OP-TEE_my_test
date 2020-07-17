@@ -8,11 +8,10 @@
 #include <defines.h>
 #include <http_handler.h>
 
+//typedef int (*data_to_json)(buffer_t * out, int *displacement, void * data);
+
 #include <data_structure/record.h>
 #include <data_structure/serie.h>
-
-
-//typedef int (*data_to_json)(buffer_t * out, int *displacement, void * data);
 
 typedef struct data_handler_t {
     uint8_t data_code;
@@ -41,6 +40,6 @@ int credentials_print_json(buffer_t * out, int *displacement, struct credentials
 int create_data_package( data_type_t data_type, buffer_t * out, void * data);
 int data_package_to_json(buffer_t * out, int *displacement, buffer_t * data);
 int get_index_by_data_code(uint8_t data_code);
-path_t request_path_of_data_package(buffer_t * data);
+path_t get_request_path_of_data_package(buffer_t * data);
 
 #endif // DATA_HANDLER_H

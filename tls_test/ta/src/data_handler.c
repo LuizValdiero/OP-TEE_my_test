@@ -75,7 +75,7 @@ int get_index_by_data_code(uint8_t data_code) {
     return i;
 }
 
-path_t request_path_of_data_package(buffer_t * data) {
+path_t get_request_path_of_data_package(buffer_t * data) {
     uint8_t data_code = data->buffer[0];
     int data_structure_id = get_index_by_data_code(data_code);
     return data_handler[data_structure_id].request_path;

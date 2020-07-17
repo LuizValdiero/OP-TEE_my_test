@@ -47,6 +47,6 @@ unsigned long get_response_code(buffer_t * response) {
     return 0;
 }
 
-void set_request_path(struct HttpHeader_t * httpHeader, path_t path) {
+void set_request_path_in_header(struct HttpHeader_t * httpHeader, path_t path) {
     httpHeader->path = path;
 }

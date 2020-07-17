@@ -1,5 +1,4 @@
 #include <data_structure/record.h>
-#include <utils/double_format_handler.h>
 
 int record_mount(buffer_t * out, int *displacement, void * data) {
     record_t * record = (record_t *) data;
@@ -16,20 +15,28 @@ int record_print_json(buffer_t * out, int *displacement, void * data) {
     record_t * record = (record_t *) data;
     
     char * buffer = (char *) out->buffer + *displacement;
-    int avaliable_size = out->buffer_size - *displacement;
-    
+    int avaliable_size = out->buffer_size - *displacement;    
     int size_print = snprintf(buffer, avaliable_size, \
         "\"smartdata\": [{\"version\": \"%d.%d\", " \
-        "\"unit\": %u, \"value\": %d, " \
-        "\"confidence\": %u, \"error\": 0, " \
+        "\"unit\": %u, \"value\": ", \
+        get_version_high(record->version), \
+        get_version_low(record->version), \
+        record->unit);
+
+    buffer += size_print;
+    avaliable_size -= size_print;
+    size_print += snprintf_double(buffer, avaliable_size, record->value);
+
+    buffer += size_print;
+    avaliable_size -= size_print;
+    size_print += snprintf(buffer, avaliable_size, \
+        "\", confidence\": %u, \"error\": 0, " \
         "\"x\": %d, \"y\": %d, \"z\": %d, " \
         "\"t\": %llu, \"dev\": %u}]", \
-        get_version_high(record->version), get_version_low(record->version), \
-        record->unit, get_integer_of_double(record->value), \
         record->uncertainty, \
         record->x, record->y, record->z, \
         record->t, record->dev);
-    DMSG("\n    * value: %d",  get_integer_of_double(record->value));
+
     if(avaliable_size < size_print)
         return TEE_ERROR_SHORT_BUFFER;
 
