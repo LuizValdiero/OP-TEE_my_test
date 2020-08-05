@@ -165,11 +165,9 @@ int verify_server_certificate(mbedtls_ssl_context * ssl)
     {
         EMSG( " failed\n" );
         tls_print_x509_crt_verify_info(flags);
-    } else {
-        IMSG( "  ok." );
+    	return 0;
     }
-
-	return TEE_SUCCESS;
+    return 1;
 }
 
 int tls_handler_write(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t size) {

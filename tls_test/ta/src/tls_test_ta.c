@@ -32,7 +32,7 @@ struct tls_handle_t {
 	struct HttpHeader_t * httpHeader;
 	struct credentials_t * credentials;
 
-	struct cipher_handle_t cipher;	
+	struct cipher_handle_t cipher;
 
 	mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
