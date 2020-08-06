@@ -1,4 +1,4 @@
-CC := gcc
+CC := $(CROSS_COMPILE)
 
 LIBS_DIR = ./libs/
 FLAGS = -Wall -Wextra  -O2
@@ -23,7 +23,7 @@ SRCS += src/utils/double_format_handler.c
 all: my_test
 	cp -p ./my_test ./host/socket-TCP-test-mbedtls
 
-libs: $(LIBS_DIR)lib-mbedtls
+libs: $(LIBS_DIR)libmbedtls
 	@make -C $^
 
 my_test: $(SRCS) libs

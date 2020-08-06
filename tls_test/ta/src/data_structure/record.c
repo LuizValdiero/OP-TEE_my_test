@@ -25,7 +25,7 @@ int record_print_json(buffer_t * out, int *displacement, void * data) {
 
     buffer += size_print;
     avaliable_size -= size_print;
-    aux_size_print += snprintf_double(buffer, avaliable_size, record->value);
+    int aux_size_print = snprintf_double(buffer, avaliable_size, record->value);
 
     size_print += aux_size_print;
     buffer += aux_size_print;

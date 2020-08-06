@@ -35,7 +35,7 @@ int record_print_json(buffer_t * out, int *displacement, void * data) {
     size_print += snprintf(buffer, avaliable_size, \
         ", \"confidence\": %u, \"error\": 0, " \
         "\"x\": %d, \"y\": %d, \"z\": %d, " \
-        "\"t\": %lu, \"dev\": %u}]", \
+        "\"t\": %llu, \"dev\": %u}]", \
         record->uncertainty, \
         record->x, record->y, record->z, \
         record->t, record->dev);

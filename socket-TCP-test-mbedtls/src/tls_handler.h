@@ -3,6 +3,16 @@
 
 #include "defines.h"
 
+/*
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/ssl.h"
+#include "mbedtls/x509.h"
+#include "mbedtls/debug.h"
+#include "mbedtls/certs.h"
+#include "mbedtls/error.h"
+// */
+//*
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/ssl.h>
@@ -10,6 +20,7 @@
 #include <mbedtls/debug.h>
 #include <mbedtls/certs.h>
 #include <mbedtls/error.h>
+// */
 
 int tls_handler_write(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t size);
 int tls_handler_read(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t size);

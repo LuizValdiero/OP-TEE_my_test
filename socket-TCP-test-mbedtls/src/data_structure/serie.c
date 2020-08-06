@@ -21,7 +21,7 @@ int serie_print_json(buffer_t * out, int *displacement, void * data) {
         "\"series\": {\"version\": \"%d.%d\", " \
         "\"unit\": %u, \"x\": %d, \"y\": %d, \"z\": %d, " \
         "\"dev\": %u,  \"r\": %u, " \
-        " \"t0\": %lu, \"t1\": %lu}", \
+        " \"t0\": %llu, \"t1\": %llu}", \
         get_version_high(serie->version), get_version_low(serie->version), \
         serie->unit, serie->x, serie->y, serie->z, \
         serie->dev, serie->r, \
