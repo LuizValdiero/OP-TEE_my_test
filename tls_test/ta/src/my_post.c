@@ -16,7 +16,6 @@ int mount_body(buffer_t * out, \
     if (credential) {
         credentials_print_json(out, &displacement, credential);
     }
-    DMSG("\n\n%s\n\n", out->buffer);
     displacement += snprintf((char *)  out->buffer + displacement ,out->buffer_size - displacement, "}");
     out->buffer_size = displacement;
     return TEE_SUCCESS;
