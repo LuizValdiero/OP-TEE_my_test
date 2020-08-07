@@ -5,6 +5,7 @@
 #include <tee_client_api.h>
 
 #include <tls_test_ta.h>
+#include "time_handler.h"
 
 #define HOSTNAME "iot.lisha.ufsc.br"
 #define PORT 443
@@ -36,6 +37,9 @@ void prepare_tee_session(struct test_ctx *ctx)
 			res, origin);
 }
 
+
+
+
 int main(void)
 {
 	struct test_ctx ctx;
@@ -65,7 +69,6 @@ int main(void)
 		errx(1, "TEEC_InvokeCommand TA_TLS_OPEN_CMD failed with code 0x%x origin 0x%x",
 			res, err_origin);
 
-
 // --------------------------- //
 //      Create Data
 // --------------------------- //
@@ -84,11 +87,12 @@ int main(void)
 		errx(1, "TEEC_InvokeCommand TEST_ENCRYPT_DATA failed with code 0x%x origin 0x%x",
 			res, err_origin);
 
+	int encrypted_data_size = op.params[0].tmpref.size;
 
+/*
 // --------------------------- //
 //      Send Data
 // --------------------------- //
-	int encrypted_data_size = op.params[0].tmpref.size;
 	
 	memset(&op, 0, sizeof(op));
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_VALUE_OUTPUT, \
@@ -134,22 +138,56 @@ int main(void)
 	if (res != TEEC_SUCCESS)
 		errx(1, "TEEC_InvokeCommand TEST_ENCRYPT_DATA failed with code 0x%x origin 0x%x",
 			res, err_origin);
+*/
+#define VALUES_LIST_SIZE 30
 
 //--------------------
+	uint64_t sum_time_interval = 0;
+	int num_interval = 0;
 
-	memset(&op, 0, sizeof(op));
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_VALUE_OUTPUT, \
-				TEEC_NONE, TEEC_NONE);
-	op.params[0].tmpref.buffer = encrypted_data;
-	op.params[0].tmpref.size = encrypted_data_size;
+    uint64_t timest0[VALUES_LIST_SIZE];
+	uint64_t timest1[VALUES_LIST_SIZE];
 
-	printf("Invoking TA to tls send\n");
-	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_SEND_CMD, &op, &err_origin);
-	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
-			res, err_origin);
+	uint64_t timestamp_usec0;
+	uint64_t timestamp_usec1; /* timestamp in microsecond */
+		
+	for (int i = 0; i < VALUES_LIST_SIZE; i++) {
+		
+		timestamp_usec0 = get_time_usec();
+		
+		memset(&op, 0, sizeof(op));
+		op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_VALUE_OUTPUT, \
+					TEEC_NONE, TEEC_NONE);
+		op.params[0].tmpref.buffer = encrypted_data;
+		op.params[0].tmpref.size = encrypted_data_size;
+		op.params[1].value.a = 0;
 
-	printf("	. response code: %d\n", op.params[1].value.a);
+		res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_SEND_CMD, &op, &err_origin);
+		if (res != TEEC_SUCCESS)
+			errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
+				res, err_origin);
+
+		timestamp_usec1 = get_time_usec();
+		sum_time_interval += timestamp_usec1 - timestamp_usec0;
+        timest0[i] = timestamp_usec0;
+        timest1[i] = timestamp_usec1;
+        num_interval++;
+	}
+
+	FILE * fp;
+	
+    fp = fopen ("/home/timestamps_send_TEE.txt","w");
+	printf("\n fp: %d", (int) fp);
+    
+	fprintf(fp, "\nnum_interval,media(us)");
+	fprintf(fp, "\n%d, %llu", num_interval, sum_time_interval/num_interval);
+    fprintf(fp, "\nenvio, t0(us), t1(us)");
+	
+	for (int i = 0; i < VALUES_LIST_SIZE; ++i)
+    {
+        fprintf(fp, "\n%d, %llu, %llu", i, timest0[i], timest1[i]);
+    }
+	fclose (fp);
 
 // --------------------------- //
 //      Close connection

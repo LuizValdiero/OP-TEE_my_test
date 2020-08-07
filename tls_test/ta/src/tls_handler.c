@@ -205,7 +205,7 @@ int tls_handler_read(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t s
             continue;
 
         if( ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY ) {
-			EMSG("Error ssl read: %d\n ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY", ret);
+			//EMSG("Error ssl read: %d\n ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY", ret);
 			mbedtls_ssl_close_notify(ssl);
             mbedtls_ssl_session_reset(ssl);
 			break;

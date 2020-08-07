@@ -278,7 +278,7 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 		record_t record = { \
 					.version = 17, \
 					.unit = 2224179556, \
-					.value = 35.5, \
+					.value = 10, \
 					.uncertainty = 0, \
 					.x = 0, \
 					.y = 1, \
