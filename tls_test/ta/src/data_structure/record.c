@@ -30,7 +30,6 @@ int record_print_json(buffer_t * out, int *displacement, void * data) {
     size_print += aux_size_print;
     buffer += aux_size_print;
     avaliable_size -= aux_size_print;
-
     size_print += snprintf(buffer, avaliable_size, \
         ", \"confidence\": %u, \"error\": 0, " \
         "\"x\": %d, \"y\": %d, \"z\": %d, " \
@@ -41,7 +40,7 @@ int record_print_json(buffer_t * out, int *displacement, void * data) {
 
     if(avaliable_size < size_print)
         return TEE_ERROR_SHORT_BUFFER;
-
+    DMSG("\n%s", out->buffer);
     *displacement += size_print;
 
     return TEE_SUCCESS;

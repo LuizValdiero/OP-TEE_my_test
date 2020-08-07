@@ -77,7 +77,7 @@ int main(void)
 					  TEEC_VALUE_INPUT, TEEC_NONE, TEEC_NONE);
 	op.params[0].tmpref.buffer = encrypted_data;
 	op.params[0].tmpref.size = sizeof(encrypted_data);
-	op.params[1].value.a = 0;
+	op.params[1].value.a = 1;
 	printf("Invoking TA to encrypt data\n");
 	res = TEEC_InvokeCommand(&ctx.sess, TEST_ENCRYPT_DATA, &op, &err_origin);
 	if (res != TEEC_SUCCESS)
