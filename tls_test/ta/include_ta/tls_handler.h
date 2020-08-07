@@ -18,15 +18,20 @@ int f_rng(void *rng __unused, unsigned char *output, size_t output_len);
 int tls_handler_write(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t size);
 int tls_handler_read(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t size);
 
+int tls_is_connected(mbedtls_ssl_context* ssl);
+int tls_reconnect(mbedtls_ssl_context* ssl, mbedtls_ssl_session* ssl_sess);
+
 void tls_print_error_code(int error_code);
 void tls_print_x509_crt_verify_info (int flags);
 
 void initialize_tls_structures(mbedtls_ssl_context* ssl, \
+                mbedtls_ssl_session* ssl_sess, \
                 mbedtls_ssl_config* conf, \
                 mbedtls_entropy_context* entropy, \
                 mbedtls_ctr_drbg_context* ctr_drbg, \
                 mbedtls_x509_crt* cacert);
 void finish_tls_structures(mbedtls_ssl_context* ssl, \
+                mbedtls_ssl_session* ssl_sess, \
                 mbedtls_ssl_config* conf, \
                 mbedtls_entropy_context* entropy, \
                 mbedtls_ctr_drbg_context* ctr_drbg, \

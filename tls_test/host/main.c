@@ -49,7 +49,7 @@ int main(void)
 //      Connect to server with SSL/TLS
 // --------------------------- //
 
-	char server_addr[255] = HOSTNAME;
+	char server_addr[200] = HOSTNAME;
 	printf("server address: %s\n", server_addr);
 
 	memset(&op, 0, sizeof(op));
@@ -90,6 +90,53 @@ int main(void)
 // --------------------------- //
 	int encrypted_data_size = op.params[0].tmpref.size;
 	
+	memset(&op, 0, sizeof(op));
+	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_VALUE_OUTPUT, \
+				TEEC_NONE, TEEC_NONE);
+	op.params[0].tmpref.buffer = encrypted_data;
+	op.params[0].tmpref.size = encrypted_data_size;
+
+	printf("Invoking TA to tls send\n");
+	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_SEND_CMD, &op, &err_origin);
+	if (res != TEEC_SUCCESS)
+		errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
+			res, err_origin);
+
+	printf("	. response code: %d\n", op.params[1].value.a);
+
+//--------------------
+
+	memset(&op, 0, sizeof(op));
+	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_VALUE_OUTPUT, \
+				TEEC_NONE, TEEC_NONE);
+	op.params[0].tmpref.buffer = encrypted_data;
+	op.params[0].tmpref.size = encrypted_data_size;
+
+	printf("Invoking TA to tls send\n");
+	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_SEND_CMD, &op, &err_origin);
+	if (res != TEEC_SUCCESS)
+		errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
+			res, err_origin);
+
+	printf("	. response code: %d\n", op.params[1].value.a);
+
+//--------------------
+
+	memset(encrypted_data, 0x0, BUFFER_LENGTH);
+	memset(&op, 0, sizeof(op));
+	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_OUTPUT,
+					  TEEC_VALUE_INPUT, TEEC_NONE, TEEC_NONE);
+	op.params[0].tmpref.buffer = encrypted_data;
+	op.params[0].tmpref.size = BUFFER_LENGTH;
+	op.params[1].value.a = 0;
+	printf("Invoking TA to encrypt data\n");
+	res = TEEC_InvokeCommand(&ctx.sess, TEST_ENCRYPT_DATA, &op, &err_origin);
+	if (res != TEEC_SUCCESS)
+		errx(1, "TEEC_InvokeCommand TEST_ENCRYPT_DATA failed with code 0x%x origin 0x%x",
+			res, err_origin);
+
+//--------------------
+
 	memset(&op, 0, sizeof(op));
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_VALUE_OUTPUT, \
 				TEEC_NONE, TEEC_NONE);

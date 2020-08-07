@@ -7,21 +7,26 @@ int f_rng(void *rng __unused, unsigned char *output, size_t output_len)
 	TEE_GenerateRandom(output, output_len);
 	return 0;
 }
-
 void initialize_tls_structures(mbedtls_ssl_context* ssl, \
+                mbedtls_ssl_session* ssl_sess, \
                 mbedtls_ssl_config* conf, \
                 mbedtls_entropy_context* entropy, \
                 mbedtls_ctr_drbg_context* ctr_drbg, \
                 mbedtls_x509_crt* cacert)
 {
+    cacert = TEE_Malloc(sizeof(mbedtls_x509_crt), 0);
+    //if (!tls_handle->cacert)
+	//	return TEE_ERROR_OUT_OF_MEMORY;
     mbedtls_ctr_drbg_init( ctr_drbg);
 	mbedtls_entropy_init( entropy);
     mbedtls_x509_crt_init( cacert);
     mbedtls_ssl_init( ssl);
     mbedtls_ssl_config_init( conf);
+    mbedtls_ssl_session_init(ssl_sess);
 }
 
 void finish_tls_structures(mbedtls_ssl_context* ssl, \
+                mbedtls_ssl_session* ssl_sess, \
                 mbedtls_ssl_config* conf, \
                 mbedtls_entropy_context* entropy, \
                 mbedtls_ctr_drbg_context* ctr_drbg, \
@@ -32,7 +37,10 @@ void finish_tls_structures(mbedtls_ssl_context* ssl, \
     mbedtls_ssl_config_free( conf );
     mbedtls_ctr_drbg_free( ctr_drbg );
     mbedtls_entropy_free( entropy );
+    mbedtls_ssl_session_free(ssl_sess);
+    TEE_Free(cacert);
 }
+
 
 int initialize_ctr_drbg(mbedtls_entropy_context * entropy, \
 	mbedtls_ctr_drbg_context * ctr_drbg, const char * pers)
@@ -198,6 +206,8 @@ int tls_handler_read(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t s
 
         if( ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY ) {
 			EMSG("Error ssl read: %d\n ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY", ret);
+			mbedtls_ssl_close_notify(ssl);
+            mbedtls_ssl_session_reset(ssl);
 			break;
 		}
 		if( ret < 0) {
@@ -210,6 +220,18 @@ int tls_handler_read(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t s
     return ret;
 }
 
+int tls_is_connected(mbedtls_ssl_context* ssl) {
+    if (ssl->state == MBEDTLS_SSL_HANDSHAKE_OVER)
+        return 1;
+    return 0;
+}
+
+int tls_reconnect(mbedtls_ssl_context* ssl, mbedtls_ssl_session* ssl_sess) {
+    mbedtls_ssl_set_session(ssl, ssl_sess);
+    handshake(ssl);
+    mbedtls_ssl_get_verify_result(ssl);
+    return 0;
+}
 
 void tls_print_error_code( int error_code) {
     char error_buf[100];

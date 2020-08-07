@@ -13,6 +13,11 @@ struct socket_handle_t {
 	TEE_TASessionHandle sess;
 };
 
+
+TEE_Result socket_handler_initialize(void *sess_ctx);
+
+void socket_handler_finish(void *sess_ctx);
+
 TEE_Result socket_handler_open(void *sess_ctx, \
 				unsigned char * server, size_t server_len, uint32_t port);
 

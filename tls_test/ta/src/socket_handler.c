@@ -4,6 +4,31 @@
 
 TEE_UUID uuid_pta_socket = PTA_SOCKET_UUID;
 
+
+TEE_Result socket_handler_initialize(void *sess_ctx) {
+	struct socket_handle_t *socket_handle = (struct socket_handle_t *)sess_ctx;
+	socket_handle->socket_handle = 0;
+	TEE_Result res;
+	uint32_t err_origin;
+
+	res = TEE_OpenTASession(&uuid_pta_socket, TEE_TIMEOUT_INFINITE, \
+					0, NULL, &socket_handle->sess, &err_origin);
+	
+	if (res != TEE_SUCCESS)
+	{
+		EMSG("socket_test openTaSession error");
+		return res;
+	}
+
+	return TEE_SUCCESS;
+}
+
+void socket_handler_finish(void *sess_ctx) {
+	struct socket_handle_t *socket_handle = (struct socket_handle_t *)sess_ctx;
+	TEE_CloseTASession(socket_handle->sess);
+}
+
+
 TEE_Result socket_handler_open(void *sess_ctx, \
 				unsigned char * server, size_t server_len, uint32_t port)
 {
@@ -12,21 +37,13 @@ TEE_Result socket_handler_open(void *sess_ctx, \
 	TEE_Result res;
 	uint32_t err_origin;
 
-    res = TEE_OpenTASession(&uuid_pta_socket, TEE_TIMEOUT_INFINITE, 
-		0, NULL, &socket_handle->sess, &err_origin);
-	
-	if (res != TEE_SUCCESS)
-	{
-		EMSG("socket_test openTaSession error");
-		return res;
-	}
-
 	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
 						TEE_PARAM_TYPE_MEMREF_INPUT,
 						TEE_PARAM_TYPE_VALUE_INPUT,
 						TEE_PARAM_TYPE_VALUE_OUTPUT);
 
 	TEE_Param op[4];
+	memset(&op, 0, sizeof(op));
 	op[0].value.a = TEE_IP_VERSION_4;
 	op[0].value.b = port;
 	op[1].memref.buffer = server;
@@ -44,6 +61,10 @@ TEE_Result socket_handler_open(void *sess_ctx, \
 		op, &err_origin);
 	
 	socket_handle->socket_handle = op[3].value.a;
+
+	DMSG("\n  Opened connection %s:%d -> %d",
+		(char *) op[1].memref.buffer,
+		op[0].value.b, socket_handle->socket_handle);
 
     return res;
 }
@@ -72,7 +93,6 @@ TEE_Result socket_handler_close(void *sess_ctx)
     if(res != TEE_SUCCESS)
         return res;
 	
-    TEE_CloseTASession(socket_handle->sess);
     return res;
 }
 

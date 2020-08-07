@@ -1,5 +1,6 @@
 global-incdirs-y += include
 global-incdirs-y += include_ta
+srcs-y += src/connections_handler.c
 srcs-y += src/crypto.c
 srcs-y += src/data_structure/record.c
 srcs-y += src/data_structure/serie.c
