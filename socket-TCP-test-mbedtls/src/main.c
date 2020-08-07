@@ -56,8 +56,8 @@ char server_addr[SERVER_ADDR_SIZE];
 int port;
 
 
-#define SERIAL_LIST_SIZE 1000
-#define VALUES_LIST_SIZE 1000
+#define SERIAL_LIST_SIZE 101
+#define VALUES_LIST_SIZE 101
 
 struct serial_data_t {
 	unsigned char data[70];
@@ -213,19 +213,15 @@ int create_serial_package(struct values_t * values , buffer_t * package_out, \
 }
 
 void gerate_values() {
-	long int t = get_time_usec();
+	uint64_t  t = get_time_usec();
 	t -= 600 * 1000000; // volta 10 min
-	//
-	values_list[0].data_code = 'R';
-	values_list[0].v0 = (uint64_t) 15.5;
-	values_list[0].v1 = second_to_micro(t);
 
-	for (int i = 1; i < VALUES_LIST_SIZE; i++) {
+	for (int i = 0; i < VALUES_LIST_SIZE; i++) {
 		values_list[i].data_code = 'R';
 		t += 60000000;// 1 min
-		values_list[i].v0 = (uint64_t) 15.5;
+		values_list[i].v0 = (uint64_t) 17;
 		t += 60000000;// 1 min
-		values_list[i].v1 = second_to_micro(t);  
+		values_list[i].v1 = t; 
 	}
 }
 
@@ -243,12 +239,10 @@ void gerate_serial_datas(cipher_handle_t * cipher) {
 
 int main( int argc, char ** argv) 
 {
-
+	printf("\n test");
+	printf("\n %d", sizeof(uint64_t));
     get_args(argc, argv, server_addr, &port);
-	FILE * fp;
-
-    fp = fopen ("/home/luiz/Downloads/timestamps_send.txt","w");
-    
+	
     if (open_connections(server_addr, port, HOSTNAME, lisha_ca_crt, lisha_ca_crt_len)) {
         printf("\n  ! Error: open_connections\n");
         exit(1);
@@ -274,30 +268,32 @@ int main( int argc, char ** argv)
 	gerate_values();
 	gerate_serial_datas(&cipher);
 
-	long int sum_time_interval = 0;
+	uint64_t sum_time_interval = 0;
 	int num_interval = 0;
-    long int times[serial_list_index];
+    uint64_t timest0[SERIAL_LIST_SIZE];
+	uint64_t timest1[SERIAL_LIST_SIZE];
 
+	uint64_t timestamp_usec0;
+	uint64_t timestamp_usec1; /* timestamp in microsecond */
+		
 	int response_code = 0;
 	send_package( (buffer_t *) &(buffer_t){ .buffer = serial_list[0].data, .buffer_size = serial_list[0].len}, \
 				&response_code, &cipher, &httpHeader, &credentials);
 		
-	for (int i = 1; i <= serial_list_index; i++) {
+	for (int i = 1; i < SERIAL_LIST_SIZE; i++) {
 		buffer_t package_data = { \
 			.buffer = serial_list[i].data, \
 			.buffer_size = serial_list[i].len
 			};
-		long int timestamp_usec0;
-		long int timestamp_usec1; /* timestamp in microsecond */
 		
 		timestamp_usec0 = get_time_usec();
 		// inicio envio
-		int response_code = 0;
 		send_package( &package_data, &response_code, &cipher, &httpHeader, &credentials);
 		// fim envio
 		timestamp_usec1 = get_time_usec();
 		sum_time_interval += timestamp_usec1 - timestamp_usec0;
-        times[i] = timestamp_usec1 - timestamp_usec0;
+        timest0[i] = timestamp_usec0;
+        timest1[i] = timestamp_usec1;
         num_interval++;
         
 		/*
@@ -310,18 +306,25 @@ int main( int argc, char ** argv)
             //    break;
             //}
 			*/
-        }
-	fprintf(fp, "\nnum_interval,media(us)");
-	fprintf(fp, "\n%d, %ld", num_interval, sum_time_interval/num_interval);
-    fprintf(fp, "\nenvio, intervalo(us)");
-	for (int i = 0; i <= num_interval; ++i)
-    {
-        fprintf(fp, "\n%d, %ld", i, times[i]);
     }
-
+	printf("\ntest");
+	FILE * fp;
+	
+    fp = fopen ("/home/timestamps_send.txt","w");
+	printf("\n fp: %d", (int) fp);
+    
+	fprintf(fp, "\nnum_interval,media(us)");
+	fprintf(fp, "\n%d, %llu", num_interval, sum_time_interval/num_interval);
+    fprintf(fp, "\nenvio, t0(us), t1(us)");
+	
+	for (int i = 1; i < VALUES_LIST_SIZE; ++i)
+    {
+        fprintf(fp, "\n%d, %llu, %llu", i, timest0[i], timest1[i]);
+    }
+	fclose (fp);
+    
     close_conections();
 
     finish_crypto(&cipher);
-    fclose (fp);
     return 0;
 }

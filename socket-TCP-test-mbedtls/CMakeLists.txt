@@ -14,20 +14,22 @@ set (SRC
 	src/utils/data_version_handler.c
 	src/utils/double_format_handler.c)
 
-add_custom_target(libs COMMAND make WORKING_DIRECTORY host/libs/libmbedtls)
+add_custom_target(libs COMMAND make WORKING_DIRECTORY libs/libmbedtls)
+
 add_executable (${PROJECT_NAME} ${SRC})
 
-target_include_directories(${PROJECT_NAME}
-			   PRIVATE host/src
-			   PRIVATE host/certs
-			   PRIVATE host/credentials
-			   PUBLIC host/libs/libmbedtls/include/
-			)
+target_include_directories (${PROJECT_NAME}
+			   PRIVATE src
+			   PRIVATE certs
+			   PRIVATE credentials
+			   PUBLIC libs/libmbedtls/include/
+			   PUBLIC libs)
 
-target_link_libraries (${PROJECT_NAME}
-				PRIVATE teec
-				libs/libmbedtls.a
-				libs/libmbedx509.a
-				libs/libmbedcrypto.a)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+				-L/home/luiz/Documentos/LISHA/trustzone/my_package/socket-TCP-test-mbedtls/libs
+				teec
+				libmbedtls.a
+				libmbedx509.a
+				libmbedcrypto.a)
 
 install (TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})

@@ -17,7 +17,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include <defines.h>
+#include "defines.h"
 
 typedef struct cipher_handle_t {
     mbedtls_aes_context aes;

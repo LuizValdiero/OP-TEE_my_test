@@ -61,7 +61,7 @@ TEE_Result initialize_cipher(struct cipher_handle_t * cipher, uint32_t algorithm
 	if (res != TEE_SUCCESS) {
 		EMSG("TEE_SetOperationKey failed %x", res);
 		return res;
-	}
+	}    
 	return TEE_SUCCESS;
 }
 
@@ -95,7 +95,7 @@ TEE_Result create_encrypted_data(struct cipher_handle_t * cipher, \
     size_t encrypted_size = plain_buffer->buffer_size *2;
     unsigned char encrypted_data[encrypted_size];
     
-    TEE_CipherInit(cipher->op, iv->buffer, iv->buffer_size);
+	TEE_CipherInit(cipher->op, iv->buffer, iv->buffer_size);
 
     if(TEE_SUCCESS != TEE_CipherUpdate( cipher->op, \
                 plain_buffer->buffer, plain_buffer->buffer_size, \

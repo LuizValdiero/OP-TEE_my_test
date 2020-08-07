@@ -1,7 +1,7 @@
-CC := $(CROSS_COMPILE)
+CC := $(CROSS_COMPILE)gcc
 
 LIBS_DIR = ./libs/
-FLAGS = -Wall -Wextra  -O2
+FLAGS = -Wall -Wextra  -O2 -static
 MBEDTLS_FLAGS = -I$(LIBS_DIR) -D_FILE_OFFSET_BITS=64 -L$(LIBS_DIR) -lmbedtls -lmbedx509 -lmbedcrypto
 
 SRCS = src/main.c

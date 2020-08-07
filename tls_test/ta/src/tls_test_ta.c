@@ -26,19 +26,27 @@
 #include <string.h>
 #include <unistd.h>
 
+
 struct tls_handle_t {
 	struct socket_handle_t socket_sess;
 
 	struct HttpHeader_t * httpHeader;
 	struct credentials_t * credentials;
 
+	unsigned char server[200];
+	uint32_t server_size;
+	uint32_t port;
+
 	struct cipher_handle_t cipher;
 
+	int iii[300];
 	mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_ssl_context ssl;
     mbedtls_ssl_config conf;
     mbedtls_x509_crt * cacert;
+	int ii[300];
+	mbedtls_ssl_session ssl_sess;
 };
 
 TEE_Result TA_CreateEntryPoint(void)
@@ -171,6 +179,10 @@ static TEE_Result ta_tls_open(void *sess_ctx, uint32_t param_types,
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
 
+	memcpy(tls_handle->server, params[1].memref.buffer, params[1].memref.size);
+	tls_handle->server_size = params[1].memref.size;
+	tls_handle->port = params[0].value.a;
+
 	err = socket_handler_open(&tls_handle->socket_sess, params[1].memref.buffer, \
 					params[1].memref.size, params[0].value.a);
 	
@@ -179,7 +191,7 @@ static TEE_Result ta_tls_open(void *sess_ctx, uint32_t param_types,
 		return err;
 	}
 	
-	initialize_tls_structures(&tls_handle->ssl, &tls_handle->conf, \
+	initialize_tls_structures(&tls_handle->ssl, &tls_handle->ssl_sess, &tls_handle->conf, \
 			&tls_handle->entropy, &tls_handle->ctr_drbg, tls_handle->cacert);
 
 	if(initialize_ctr_drbg(&tls_handle->entropy, &tls_handle->ctr_drbg, "tls_test") != 0) {
@@ -198,10 +210,12 @@ static TEE_Result ta_tls_open(void *sess_ctx, uint32_t param_types,
 		goto exit;
     }
 	set_bio(&tls_handle->ssl, &tls_handle->socket_sess, f_send, f_recv, NULL);
-    if(handshake(&tls_handle->ssl) != 0) {
+    mbedtls_ssl_get_session(&tls_handle->ssl, &tls_handle->ssl_sess);
+	if(handshake(&tls_handle->ssl) != 0) {
 		goto exit;
     }
     if(verify_server_certificate(&tls_handle->ssl) != 0) {
+		EMSG( "\n	! error verify_server_certificate");	
 		goto exit;
     }
 
@@ -221,6 +235,19 @@ exit:
 	ta_tls_close(sess_ctx, exp_param_types, op);
 
 	return TEE_ERROR_CANCEL;
+}
+
+int reconnect(void *sess_ctx);
+int reconnect(void *sess_ctx) {
+    struct tls_handle_t *tls_handle = (struct tls_handle_t *)sess_ctx;
+
+	if (tls_is_connected(&tls_handle->ssl)) {
+        return 0;
+	}
+	socket_handler_open(&tls_handle->socket_sess, tls_handle->server, \
+					tls_handle->server_size, tls_handle->port);
+	
+    return tls_reconnect(&tls_handle->ssl, &tls_handle->ssl_sess);
 }
 
 static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
@@ -259,6 +286,8 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 
 	mount_request( &request, tls_handle->httpHeader, data_package_to_json, &plain_data, tls_handle->credentials);
 	TEE_Free(plain_data.buffer);
+	if(reconnect(sess_ctx))
+        return TEE_ERROR_COMMUNICATION;
 
 	ret = tls_handler_write(&tls_handle->ssl, request.buffer, request.buffer_size);
 	TEE_Free(request.buffer);
@@ -327,10 +356,14 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 
 	uint32_t total_size = 0;
 
-	unsigned char iv_char[16];
-	buffer_t iv = { .buffer_size = 16, .buffer = iv_char};
-	gerate_iv(&iv);
+	//unsigned char iv_char[16];
+	//buffer_t iv = { .buffer_size = 16, .buffer = iv_char};
+	//gerate_iv(&iv);
 
+	unsigned char iv_char[16] = {0x65, 0x04, 0xEF, 0x3F, 0x0D, 0xBF, 0xBE, 0x2A, 0xDD, 0x1D,
+          0x1D, 0x39, 0x60, 0xC3, 0x39, 0x73};
+	buffer_t iv = { .buffer_size = 16, .buffer = iv_char};
+	
 	if (params[1].value.a == 0) {
 		serie_t serie = { \
 					.version = 17, \
@@ -347,19 +380,19 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 		record_t record = { \
 					.version = 17, \
 					.unit = 2224179556, \
-					.value = 15.03, \
+					.value = 22, \
 					.uncertainty = 0, \
 					.x = 0, \
 					.y = 1, \
 					.z = 2, \
-					.t = 1594256176706000, \
+					.t = 1596751947668246, \
 					.dev = 0};
 		create_data_package(RECORD, &plain_buffer, (void *) &record);	
 	}
 
 	create_encrypted_data(&tls_handle->cipher, &iv, \
                 &plain_buffer, &encrypted_data);
-	TEE_Free(plain_buffer.buffer);
+	//TEE_Free(plain_buffer.buffer);
 
 	total_size = sizeof(header) + encrypted_data.buffer_size;
 	if (params[0].memref.size < total_size) {
