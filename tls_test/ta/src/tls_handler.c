@@ -16,7 +16,7 @@ void initialize_tls_structures(mbedtls_ssl_context* ssl, \
 {
     cacert = TEE_Malloc(sizeof(mbedtls_x509_crt), 0);
     //if (!tls_handle->cacert)
-	//	return TEE_ERROR_OUT_OF_MEMORY;
+	//	return CODE_ERROR_OUT_OF_MEMORY;
     mbedtls_ctr_drbg_init( ctr_drbg);
 	mbedtls_entropy_init( entropy);
     mbedtls_x509_crt_init( cacert);
@@ -146,8 +146,7 @@ void set_bio(mbedtls_ssl_context * ssl, void  * sess_socket, \
 int handshake(mbedtls_ssl_context * ssl)
 {
 	int ret;
-
-	DMSG( "\n  . Performing the SSL/TLS handshake..." );
+    DMSG( "\n  . Performing the SSL/TLS handshake..." );
     
     while( ( ret = mbedtls_ssl_handshake( ssl ) ) != 0 )
     {
@@ -167,17 +166,15 @@ int handshake(mbedtls_ssl_context * ssl)
 int verify_server_certificate(mbedtls_ssl_context * ssl)
 {
 	uint32_t flags;
-	
 	DMSG( "  . Verifying peer X.509 certificate..." );
     if( ( flags = mbedtls_ssl_get_verify_result( ssl ) ) != 0 )
     {
         EMSG( " failed\n" );
         tls_print_x509_crt_verify_info(flags);
-    } else {
-        IMSG( "  ok." );
+        return CODE_ERROR_SECURITY;
     }
 
-	return TEE_SUCCESS;
+	return CODE_SUCCESS;
 }
 
 int tls_handler_write(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t size) {
@@ -205,7 +202,7 @@ int tls_handler_read(mbedtls_ssl_context * ssl, unsigned char * buffer, size_t s
             continue;
 
         if( ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY ) {
-			//EMSG("Error ssl read: %d\n ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY", ret);
+			DMSG("Error ssl read: %d\n ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY", ret);
 			mbedtls_ssl_close_notify(ssl);
             mbedtls_ssl_session_reset(ssl);
 			break;

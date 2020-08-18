@@ -167,4 +167,4 @@
 "-----END CERTIFICATE-----\r\n"
 
 const char lisha_ca_crt[] = LISHA_CA;
-const size_t lisha_ca_crt_len = sizeof(lisha_ca_crt);
+const size_t lisha_ca_crt_len = sizeof(LISHA_CA);

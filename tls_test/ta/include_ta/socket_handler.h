@@ -1,8 +1,7 @@
 #ifndef _SOCKET_HANDLER_H
 #define _SOCKET_HANDLER_H
 
-#include <tee_internal_api.h>
-#include <tee_internal_api_extensions.h>
+#include <defines.h>
 
 #include <pta_socket.h>
 #include <tee_isocket.h>

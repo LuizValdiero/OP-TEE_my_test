@@ -4,13 +4,13 @@ int mount_serial_package(TEE_Param * out, serial_header_t * header, buffer_t * d
     uint32_t header_size = sizeof(serial_header_t);
 
     if (out->memref.size < (header_size + data->buffer_size)) {
-        return TEE_ERROR_SHORT_BUFFER;
+        return CODE_ERROR_SHORT_BUFFER;
     }
 	memcpy(((unsigned char *) out->memref.buffer), header, header_size);
 	memcpy(((unsigned char *) out->memref.buffer) + header_size, data->buffer, data->buffer_size);
     out->memref.size = header_size + data->buffer_size;
 
-    return TEE_SUCCESS;
+    return CODE_SUCCESS;
 }
 
 int dismount_serial_package(TEE_Param * in, serial_header_t * header, buffer_t * data) {
@@ -22,5 +22,5 @@ int dismount_serial_package(TEE_Param * in, serial_header_t * header, buffer_t *
     if (data->buffer_size != header->encrypted_size)
         return TEE_ERROR_BAD_PARAMETERS;
 
-    return TEE_SUCCESS;
+    return CODE_SUCCESS;
 }

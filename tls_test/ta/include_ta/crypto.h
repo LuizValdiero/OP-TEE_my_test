@@ -30,7 +30,7 @@ TEE_Result decrypt_data(struct cipher_handle_t * cipher, \
                 buffer_t * cipher_buffer, \
                 buffer_t * plain_buffer);
 
-TEE_Result create_encrypted_data(struct cipher_handle_t * cipher, \
+TEE_Result encrypt_data(struct cipher_handle_t * cipher, \
                 buffer_t * iv, \
                 buffer_t * plain_buffer, \
                 buffer_t * cipher_buffer);

@@ -32,7 +32,6 @@ int recv_data(struct connections_handle_t * conn, unsigned char * buffer, size_t
 int reconnect(struct connections_handle_t * conn) {
     if (tls_is_connected(&conn->ssl))
         return 0;
-    DMSG("\n reconnect");
     open_tcp(conn, (unsigned char *) &conn->server_addr, conn->server_addr_size);
     
     return tls_reconnect(&conn->ssl, &conn->ssl_sess);
@@ -46,33 +45,24 @@ int open_connections(struct connections_handle_t * conn, \
     int ret;
     conn->server_addr_size = server_addr_size;
     memcpy(conn->server_addr, server_addr, server_addr_size);
-    DMSG("\n %s", conn->server_addr);
     conn->port = port;
 
     ret = socket_handler_initialize(&conn->socket_sess);
-
-    if(ret != TEE_SUCCESS) {
+    if(ret != CODE_SUCCESS) {
         DMSG("\n    ! error to initialize");
         return ret;
     }
-
-    // se eu passo conn->server_addr da TEE_ERROR_OUT_OF_MEMORY
+    
     ret = open_tcp(conn, (unsigned char *) server_addr, conn->server_addr_size);
-
-    if(ret == TEE_SUCCESS) {
-        DMSG("\n  Open tls");
-
+    if(ret == CODE_SUCCESS) {
         ret = open_tls(conn, ca_crt, ca_crt_len);
-        if (ret == TEE_SUCCESS)
+        if (ret == CODE_SUCCESS)
             return ret;
-        
-        EMSG( "  error open_tls\n  ! connection closed due to an error");
         
         close_conections(conn);
         return ret;
     }
     
-    DMSG("\n  Error socket");
     clear_structs(conn);
     return ret;
 }
@@ -82,7 +72,6 @@ int open_tcp(struct connections_handle_t * conn, \
 {
     unsigned char buff[200];
     memcpy(buff, server, server_len);
-    DMSG("\n open_tcp %s", buff);
     return socket_handler_open(&conn->socket_sess, (unsigned char *) buff, \
                 server_len, conn->port);
 }
@@ -105,7 +94,7 @@ int open_tls(struct connections_handle_t * conn, \
     if(assign_configuration(&conn->ssl, &conn->conf) != 0) {
 		goto exit;
     }
-	if(set_hostname( &conn->ssl, (const char *) &conn->server_addr ) != 0) {
+	if(set_hostname( &conn->ssl, "iot.lisha.ufsc.br" ) != 0) {
 		goto exit;
     }
 	set_bio(&conn->ssl, &conn->socket_sess, f_send, f_recv, NULL);
@@ -113,14 +102,13 @@ int open_tls(struct connections_handle_t * conn, \
     if(handshake(&conn->ssl) != 0) {
 		goto exit;
     }
-    if(verify_server_certificate(&conn->ssl) != 0) {
-		goto exit;
+    if(verify_server_certificate(&conn->ssl) != CODE_SUCCESS) {
+		//goto exit;
     }
-
-	return TEE_SUCCESS;
+	return CODE_SUCCESS;
 
 exit:
-	return TEE_ERROR_CANCEL; 
+	return CODE_ERROR_CANCEL; 
 }
 
 void close_conections(struct connections_handle_t * conn) {

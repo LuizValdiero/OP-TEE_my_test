@@ -56,8 +56,8 @@ char server_addr[SERVER_ADDR_SIZE];
 int port;
 
 
-#define SERIAL_LIST_SIZE 101
-#define VALUES_LIST_SIZE 101
+#define SERIAL_LIST_SIZE 11
+#define VALUES_LIST_SIZE 11
 
 struct serial_data_t {
 	unsigned char data[70];
@@ -190,7 +190,7 @@ int create_serial_package(struct values_t * values , buffer_t * package_out, \
 	memcpy(header.iv, iv.buffer, iv.buffer_size);
 
     cipher->nc_off = 0;
-	create_encrypted_data(&cipher->aes, &cipher->nc_off, &iv, \
+	encrypt_data(&cipher->aes, &cipher->nc_off, &iv, \
                 &plain_data, &encrypted_data);
 	
     free(plain_data.buffer);
@@ -217,7 +217,7 @@ void gerate_values() {
 	t -= 600 * 1000000; // volta 10 min
 
 	for (int i = 0; i < VALUES_LIST_SIZE; i++) {
-		values_list[i].data_code = 'R';
+		values_list[i].data_code = 'S';
 		t += 60000000;// 1 min
 		values_list[i].v0 = (uint64_t) 17;
 		t += 60000000;// 1 min
@@ -243,7 +243,7 @@ int main( int argc, char ** argv)
 	printf("\n %d", sizeof(uint64_t));
     get_args(argc, argv, server_addr, &port);
 	
-    if (open_connections(server_addr, port, HOSTNAME, lisha_ca_crt, lisha_ca_crt_len)) {
+    if (open_connections(server_addr, port, server_addr, lisha_ca_crt, lisha_ca_crt_len)) {
         printf("\n  ! Error: open_connections\n");
         exit(1);
     }

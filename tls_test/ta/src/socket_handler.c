@@ -14,13 +14,13 @@ TEE_Result socket_handler_initialize(void *sess_ctx) {
 	res = TEE_OpenTASession(&uuid_pta_socket, TEE_TIMEOUT_INFINITE, \
 					0, NULL, &socket_handle->sess, &err_origin);
 	
-	if (res != TEE_SUCCESS)
+	if (res != CODE_SUCCESS)
 	{
 		EMSG("socket_test openTaSession error");
 		return res;
 	}
 
-	return TEE_SUCCESS;
+	return CODE_SUCCESS;
 }
 
 void socket_handler_finish(void *sess_ctx) {
@@ -33,7 +33,6 @@ TEE_Result socket_handler_open(void *sess_ctx, \
 				unsigned char * server, size_t server_len, uint32_t port)
 {
     struct socket_handle_t *socket_handle = (struct socket_handle_t *)sess_ctx;
-	socket_handle->socket_handle = 0;
 	TEE_Result res;
 	uint32_t err_origin;
 
@@ -50,21 +49,12 @@ TEE_Result socket_handler_open(void *sess_ctx, \
 	op[1].memref.size = server_len;
 	op[2].value.a = TEE_ISOCKET_PROTOCOLID_TCP;
 
-
-	DMSG("\n  Open connection %s:%d",
-		(char *) op[1].memref.buffer,
-		op[0].value.b);
-
 	res = TEE_InvokeTACommand(socket_handle->sess, TEE_TIMEOUT_INFINITE,
 		PTA_SOCKET_OPEN,  
 		ptypes,
 		op, &err_origin);
 	
 	socket_handle->socket_handle = op[3].value.a;
-
-	DMSG("\n  Opened connection %s:%d -> %d",
-		(char *) op[1].memref.buffer,
-		op[0].value.b, socket_handle->socket_handle);
 
     return res;
 }
@@ -90,7 +80,7 @@ TEE_Result socket_handler_close(void *sess_ctx)
                 ptypes, \
                 op, &err_origin);
 
-    if(res != TEE_SUCCESS)
+    if(res != CODE_SUCCESS)
         return res;
 	
     return res;
@@ -109,7 +99,6 @@ int f_send(void * sess_ctx, const unsigned char * buf, unsigned int len)
 	op[0].value.a = socket_handle->socket_handle;
 	op[0].value.b = TEE_TIMEOUT_INFINITE;
 	op[1].memref.buffer = (unsigned char *) buf;
-//	op[1].memref.buffer = buf;
 	op[1].memref.size = len;
 	
 	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
@@ -121,10 +110,8 @@ int f_send(void * sess_ctx, const unsigned char * buf, unsigned int len)
 		PTA_SOCKET_SEND,  
 		ptypes,
 		op, &err_origin);
-	
-	//DMSG("\n  . f_send sent %d bytes, res: %x\n", op[2].value.a, err);
-		
-	if (err != TEE_SUCCESS)
+
+	if (err != CODE_SUCCESS)
 	{
 		EMSG("\n  . Error 0x%x", err);
 		return err;
@@ -149,8 +136,6 @@ int f_recv_timeout(void * sess_ctx, unsigned char * buf, unsigned int len,  uint
 	op[0].value.b = timeout;
 	op[1].memref.buffer = buf;
 	op[1].memref.size = len;
-	
-
 
 	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
 						TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -162,10 +147,7 @@ int f_recv_timeout(void * sess_ctx, unsigned char * buf, unsigned int len,  uint
 		ptypes,
 		op, &err_origin);
 
-
-	IMSG("		%d bytes recved.", op[1].memref.size);
-
-	if (err != TEE_SUCCESS)
+	if (err != CODE_SUCCESS)
 	{
 		EMSG("\n  . Error 0x%x", err);
 		return err;

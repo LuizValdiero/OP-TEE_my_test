@@ -1,8 +1,10 @@
 #ifndef _TLS_HANDLER_H
 #define _TLS_HANDLER_H
 
-#include <tee_internal_api.h>
-#include <tee_internal_api_extensions.h>
+//#include <tee_internal_api.h>
+//#include <tee_internal_api_extensions.h>
+
+#include <defines.h>
 
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>

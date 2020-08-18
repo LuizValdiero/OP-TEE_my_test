@@ -30,11 +30,11 @@ int mount_http_header(buffer_t * out, int *displacement, struct HttpHeader_t * h
                 httpHeader->content_length, \
                 content_type_list[httpHeader->content_type]);
     if(avaliable_size < size_print)
-        return TEE_ERROR_SHORT_BUFFER;
+        return CODE_ERROR_SHORT_BUFFER;
 
     *displacement += size_print;
 
-    return TEE_SUCCESS;
+    return CODE_SUCCESS;
 }
 
 unsigned long get_response_code(buffer_t * response) {

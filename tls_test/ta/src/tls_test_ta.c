@@ -41,7 +41,7 @@ TEE_Result TA_CreateEntryPoint(void)
 {
 	DMSG(" tls_test");
 
-	return TEE_SUCCESS;
+	return CODE_SUCCESS;
 }
 
 void TA_DestroyEntryPoint(void)
@@ -67,7 +67,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 	
 	tls_handle = TEE_Malloc(sizeof(struct tls_handle_t), 0);
 	if (!tls_handle)
-		return TEE_ERROR_OUT_OF_MEMORY;
+		return CODE_ERROR_OUT_OF_MEMORY;
 
 	struct HttpHeader_t httpHeader = { \
         .method = POST, \
@@ -79,7 +79,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 	uint32_t size = sizeof(httpHeader);
 	tls_handle->httpHeader = TEE_Malloc( size, 0);
 	if (!tls_handle->httpHeader)
-		return TEE_ERROR_OUT_OF_MEMORY;
+		return CODE_ERROR_OUT_OF_MEMORY;
 
 	memcpy(tls_handle->httpHeader, &httpHeader, size);
 	
@@ -91,7 +91,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 	size = sizeof(credentials);
 	tls_handle->credentials = TEE_Malloc( size, 0);
 	if (!tls_handle->credentials)
-		return TEE_ERROR_OUT_OF_MEMORY;
+		return CODE_ERROR_OUT_OF_MEMORY;
 	memcpy(tls_handle->credentials, &credentials, size);
 	
 
@@ -103,7 +103,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types,
 	initialize_crypto(&tls_handle->cipher, algorithm, TEE_MODE_ENCRYPT, key, key_size);
 
 	*sess_ctx = (void *)tls_handle;
-	return TEE_SUCCESS;
+	return CODE_SUCCESS;
 }
 
 void TA_CloseSessionEntryPoint(void *sess_ctx)
@@ -134,7 +134,7 @@ static TEE_Result ta_tls_close(void *sess_ctx, uint32_t param_types,
 	
 	close_conections(&tls_handle->conn);
 
-	return TEE_SUCCESS;
+	return CODE_SUCCESS;
 }
 
 
@@ -177,10 +177,11 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 	
 	iv.buffer = header.iv;
 	iv.buffer_size = sizeof(header.iv);
+	plain_data.buffer = TEE_Malloc(encrypted_data.buffer_size, 0);
+	plain_data.buffer_size = encrypted_data.buffer_size;
 
 	decrypt_data(&tls_handle->cipher, &iv, \
                 &encrypted_data, &plain_data);
-
 
 	int request_size = 512;
 	buffer_t request = { .buffer = TEE_Malloc(request_size, 0), .buffer_size = request_size};
@@ -197,7 +198,7 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 	params[1].value.a = 0;
 
 	if(ret <  0)
-		return TEE_ERROR_COMMUNICATION;
+		return CODE_ERROR_COMMUNICATION;
 
 	#define HTTPS_RESPONSE_BUFFER_SIZE 1024
 	buffer_t response = {.buffer = TEE_Malloc(HTTPS_RESPONSE_BUFFER_SIZE, 0), .buffer_size = HTTPS_RESPONSE_BUFFER_SIZE};
@@ -211,11 +212,12 @@ static TEE_Result ta_tls_send(void *sess_ctx, uint32_t param_types,
 			response_size = recv_data(&tls_handle->conn, \
 											response.buffer, response.buffer_size);
 		}
+		DMSG("\nresponse_code: %d", params[1].value.a);
 	}
 
 	if (!params[1].value.a)
-		return TEE_ERROR_CANCEL;
-	return TEE_SUCCESS;
+		return CODE_ERROR_CANCEL;
+	return CODE_SUCCESS;
 }
 
 static TEE_Result ta_tls_recv(void *sess_ctx, uint32_t param_types,
@@ -236,7 +238,7 @@ static TEE_Result ta_tls_recv(void *sess_ctx, uint32_t param_types,
 				params[0].memref.buffer, \
 				params[0].memref.size);
 	
-	return TEE_SUCCESS;
+	return CODE_SUCCESS;
 }
 
 static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
@@ -288,14 +290,17 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 		create_data_package(RECORD, &plain_buffer, (void *) &record);	
 	}
 
-	create_encrypted_data(&tls_handle->cipher, &iv, \
+	encrypted_data.buffer = TEE_Malloc(plain_buffer.buffer_size, 0);
+	encrypted_data.buffer_size = plain_buffer.buffer_size;
+
+	encrypt_data(&tls_handle->cipher, &iv, \
                 &plain_buffer, &encrypted_data);
 	TEE_Free(plain_buffer.buffer);
 
 	total_size = sizeof(header) + encrypted_data.buffer_size;
 	if (params[0].memref.size < total_size) {
 		TEE_Free(encrypted_data.buffer);
-		return TEE_ERROR_SHORT_BUFFER;
+		return CODE_ERROR_SHORT_BUFFER;
 	}
 
 	header.encrypted_size = encrypted_data.buffer_size;
@@ -306,7 +311,7 @@ static TEE_Result test_encrypt_data(void *sess_ctx, uint32_t param_types,
 
 	TEE_Free(encrypted_data.buffer);
 	
-	return TEE_SUCCESS;
+	return CODE_SUCCESS;
 }
 
 
@@ -326,6 +331,6 @@ TEE_Result TA_InvokeCommandEntryPoint(void *sess_ctx,
 	case TEST_ENCRYPT_DATA:
 		return test_encrypt_data(sess_ctx, param_types, params);
 	default:
-		return TEE_ERROR_NOT_SUPPORTED;
+		return CODE_ERROR_NOT_SUPPORTED;
 	}
 }

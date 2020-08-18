@@ -18,7 +18,7 @@ int mount_body(buffer_t * out, \
     }
     displacement += snprintf((char *)  out->buffer + displacement ,out->buffer_size - displacement, "}");
     out->buffer_size = displacement;
-    return TEE_SUCCESS;
+    return CODE_SUCCESS;
 }
 
 int mount_request(buffer_t * out, struct HttpHeader_t * httpHeader, \
@@ -28,7 +28,7 @@ int mount_request(buffer_t * out, struct HttpHeader_t * httpHeader, \
     buffer_t body = { .buffer = TEE_Malloc(out->buffer_size, 0), \
                         .buffer_size = out->buffer_size};
     if (!body.buffer)
-        return TEE_ERROR_OUT_OF_MEMORY;
+        return CODE_ERROR_OUT_OF_MEMORY;
 
     mount_body(&body, data_to_json, data, credentials);
     httpHeader->content_length = body.buffer_size;
@@ -36,11 +36,11 @@ int mount_request(buffer_t * out, struct HttpHeader_t * httpHeader, \
     mount_http_header(out, &displacement, httpHeader);
     if (out->buffer_size < displacement + body.buffer_size) {    
         TEE_Free(body.buffer);
-        return TEE_ERROR_SHORT_BUFFER;
+        return CODE_ERROR_SHORT_BUFFER;
     }
     memcpy(out->buffer + displacement, body.buffer, body.buffer_size);
     out->buffer_size = displacement + body.buffer_size;
 
     TEE_Free(body.buffer);
-    return TEE_SUCCESS;
+    return CODE_SUCCESS;
 }

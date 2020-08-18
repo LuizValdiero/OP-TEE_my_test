@@ -18,19 +18,19 @@ SRCS += src/tls_handler.c
 SRCS += src/utils/data_version_handler.c
 SRCS += src/utils/double_format_handler.c
 
-.PHONY: all my_test libs
+.PHONY: all my_test_mbedtls libs
 
-all: my_test
-	cp -p ./my_test ./host/socket-TCP-test-mbedtls
+all: my_test_mbedtls
+	cp -p ./my_test_mbedtls ./host/socket-TCP-test-mbedtls
 
 libs: $(LIBS_DIR)libmbedtls
 	@make -C $^
 
-my_test: $(SRCS) libs
+my_test_mbedtls: $(SRCS) libs
 	@echo "compile $@"
 	@$(CC) $(FLAGS) $(SRCS) $(MBEDTLS_FLAGS) -o $@
 
 .PHONY: clean
 clean:
 	@echo "clean"
-	@rm -rf *.o *~ my_test
+	@rm -rf *.o *~ my_test_mbedtls

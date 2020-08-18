@@ -64,10 +64,10 @@ int decrypt_data(mbedtls_aes_context * aes, size_t * nc_off, \
                 buffer_t * cipher_buffer, \
                 buffer_t * plain_buffer)
 {
-    return create_encrypted_data(aes, nc_off, iv, cipher_buffer, plain_buffer);
+    return encrypt_data(aes, nc_off, iv, cipher_buffer, plain_buffer);
 }
 
-int create_encrypted_data(mbedtls_aes_context * aes, size_t * nc_off, \
+int encrypt_data(mbedtls_aes_context * aes, size_t * nc_off, \
                 buffer_t * iv, \
                 buffer_t * plain_buffer, \
                 buffer_t * cipher_buffer)

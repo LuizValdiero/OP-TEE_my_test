@@ -11,6 +11,8 @@
 #define PORT 443
 #define BUFFER_LENGTH 2048
 
+#define VALUES_LIST_SIZE 11
+
 /* TEE resources */
 struct test_ctx {
 	TEEC_Context ctx;
@@ -38,8 +40,6 @@ void prepare_tee_session(struct test_ctx *ctx)
 }
 
 
-
-
 int main(void)
 {
 	struct test_ctx ctx;
@@ -54,14 +54,15 @@ int main(void)
 // --------------------------- //
 
 	char server_addr[200] = HOSTNAME;
+	int server_addr_size = sizeof(HOSTNAME);
 	printf("server address: %s\n", server_addr);
 
 	memset(&op, 0, sizeof(op));
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, TEEC_MEMREF_TEMP_INPUT,
-					 TEEC_NONE, TEEC_NONE);
+	op.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT, \
+				TEEC_MEMREF_TEMP_INPUT, TEEC_NONE, TEEC_NONE);
 	op.params[0].value.a = PORT;
 	op.params[1].tmpref.buffer = server_addr;
-	op.params[1].tmpref.size = sizeof(server_addr);
+	op.params[1].tmpref.size = server_addr_size;
 
 	printf("Invoking TA to tls open\n");
 	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_OPEN_CMD, &op, &err_origin);
@@ -89,58 +90,6 @@ int main(void)
 
 	int encrypted_data_size = op.params[0].tmpref.size;
 
-/*
-// --------------------------- //
-//      Send Data
-// --------------------------- //
-	
-	memset(&op, 0, sizeof(op));
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_VALUE_OUTPUT, \
-				TEEC_NONE, TEEC_NONE);
-	op.params[0].tmpref.buffer = encrypted_data;
-	op.params[0].tmpref.size = encrypted_data_size;
-
-	printf("Invoking TA to tls send\n");
-	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_SEND_CMD, &op, &err_origin);
-	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
-			res, err_origin);
-
-	printf("	. response code: %d\n", op.params[1].value.a);
-
-//--------------------
-
-	memset(&op, 0, sizeof(op));
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_VALUE_OUTPUT, \
-				TEEC_NONE, TEEC_NONE);
-	op.params[0].tmpref.buffer = encrypted_data;
-	op.params[0].tmpref.size = encrypted_data_size;
-
-	printf("Invoking TA to tls send\n");
-	res = TEEC_InvokeCommand(&ctx.sess, TA_TLS_SEND_CMD, &op, &err_origin);
-	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_InvokeCommand TA_TLS_SEND_CMD failed with code 0x%x origin 0x%x",
-			res, err_origin);
-
-	printf("	. response code: %d\n", op.params[1].value.a);
-
-//--------------------
-
-	memset(encrypted_data, 0x0, BUFFER_LENGTH);
-	memset(&op, 0, sizeof(op));
-	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_OUTPUT,
-					  TEEC_VALUE_INPUT, TEEC_NONE, TEEC_NONE);
-	op.params[0].tmpref.buffer = encrypted_data;
-	op.params[0].tmpref.size = BUFFER_LENGTH;
-	op.params[1].value.a = 0;
-	printf("Invoking TA to encrypt data\n");
-	res = TEEC_InvokeCommand(&ctx.sess, TEST_ENCRYPT_DATA, &op, &err_origin);
-	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_InvokeCommand TEST_ENCRYPT_DATA failed with code 0x%x origin 0x%x",
-			res, err_origin);
-*/
-#define VALUES_LIST_SIZE 30
-
 //--------------------
 	uint64_t sum_time_interval = 0;
 	int num_interval = 0;
@@ -150,9 +99,11 @@ int main(void)
 
 	uint64_t timestamp_usec0;
 	uint64_t timestamp_usec1; /* timestamp in microsecond */
-		
+	
+	printf("datas: %d\n", VALUES_LIST_SIZE);
+
 	for (int i = 0; i < VALUES_LIST_SIZE; i++) {
-		
+		printf("data[%d]\n", i);
 		timestamp_usec0 = get_time_usec();
 		
 		memset(&op, 0, sizeof(op));
@@ -174,6 +125,8 @@ int main(void)
         num_interval++;
 	}
 
+	printf("\ntest");
+
 	FILE * fp;
 	
     fp = fopen ("/home/timestamps_send_TEE.txt","w");
@@ -194,7 +147,6 @@ int main(void)
 // --------------------------- //
 
 	memset(&op, 0, sizeof(op));
-
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_NONE, TEEC_NONE, TEEC_NONE, TEEC_NONE);
 
 	printf("Invoking TA to tls close\n");
@@ -208,7 +160,6 @@ int main(void)
 // ------------------------------ //
 
 	TEEC_CloseSession(&ctx.sess);
-
 	TEEC_FinalizeContext(&ctx.ctx);
 
 	return 0;
